@@ -3,7 +3,14 @@ Creación de una aplicación con Java que permita a los usuarios crear sus reser
 
 ## Qué hace la app
 
-En la aplicación el cliente puede manejar sus reservas del restaurante, permitiendo buscar las fechas y horarios disponibles y crear sus reservas, consultar, modificar y cancelarlas. El sistema impide la creación de reservas incompatibles para una misma mesa, manteniendo un aforo máximo de comensales en todo el restaurante.
+En la aplicación el cliente puede manejar sus reservas del restaurante, permitiendo las siguientes acciones:
+- Buscar fechas y horarios disponibles 
+- Crear reservas
+- Consultar reservas
+- Modificar reservas
+- Cancelar reservas 
 
-## Estado Actual
-  En desarrollo.
+El sistema impedirá la creación de reservas incompatibles para una misma mesa, manteniendo un aforo máximo de comensales en todo el restaurante.
+
+## Estado actual
+En desarrollo.
