@@ -13,4 +13,4 @@ En la aplicación el cliente puede manejar sus reservas del restaurante, permiti
 El sistema impedirá la creación de reservas incompatibles para una misma mesa, manteniendo un aforo máximo de comensales en todo el restaurante.
 
 ## Estado actual
-En desarrollo.
+En desarrollo...
