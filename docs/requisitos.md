@@ -9,6 +9,7 @@
 4. Selecciona la fecha en el calendario.
 5. La app muestra las horas disponibles para ese día, según los horarios fijos del restaurante (por ejemplo: 19:00 / 19:30 / 20:00).
 6. El cliente elige una hora y confirma la reserva.
+7. La app envía un correo de confirmación.
    
 ### Consultar reserva
 1. El cliente podrá consultar su reserva con su número de móvil en la app.
