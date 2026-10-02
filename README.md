@@ -1,7 +1,7 @@
 # Gestor de reservas de restaurante
-Creación de una aplicación con Java que permita a los usuarios crear sus reservas en el restaurante.
+Creación de una aplicación web que se adapta a ordenador y móvil con Java que permita a los usuarios crear sus reservas en el restaurante.
 
-## Qué hace la app
+## Qué hace la aplicación web 
 
 En la aplicación el cliente puede manejar sus reservas del restaurante, permitiendo las siguientes acciones:
 - Buscar fechas y horarios disponibles 
