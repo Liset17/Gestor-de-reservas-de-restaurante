@@ -92,7 +92,7 @@ Todos los datos son obligatorios.
 - Un cliente no puede tener dos reservas que se pisen en el tiempo.
 - Si un cliente ya tiene una reserva ese mismo día, la app le avisa y le pregunta si quiere continuar o modificar la existente.
 - Un cliente solo puede ver, modificar o cancelar sus propias reservas. Para acceder a sus reservas, el cliente deberá verificar su identidad mediante un código enviado por SMS o correo electrónico.
-
+- No se puede reservar solo tronas: los niños menores de 3 años siempre van acompañados de al menos 1 persona.
 
 
 ### Modificar y cancelar
