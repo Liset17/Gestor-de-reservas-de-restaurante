@@ -83,6 +83,10 @@
 - **Decisión:** toda reserva debe tener al menos 1 persona; los niños menores de 3 años siempre van acompañados.
 - **Por qué:** un bebé no puede ir solo al restaurante, y una reserva sin personas no tiene sentido.
 
+## 22. Reserva sin trona
+- **Decisión:** si no quedan tronas, la reserva mantiene el mismo número de personas; el niño solo ocupa silla si el cliente lo añade como persona.
+- **Por qué:** el sistema no supone nada y es el cliente quien decide si necesita una silla extra; así el aforo refleja exactamente lo que el cliente ha pedido.
+
 
 
 
