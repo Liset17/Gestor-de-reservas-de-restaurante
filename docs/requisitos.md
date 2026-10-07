@@ -71,6 +71,8 @@ Todos los datos son obligatorios.
 - Las horas van de 30 en 30 minutos, de 11:30 a 23:30, todos los días.
 - No se puede reservar en una fecha u hora que ya ha pasado.
 - Las horas no disponibles se muestran en gris y no se pueden seleccionar.
+- Si no quedan tronas, la app avisa: "No quedan tronas disponibles en este horario. ¿Quieres continuar la reserva sin trona? Si necesitas una silla para el niño, añádelo como persona."
+- - Si se continúa sin trona, la reserva mantiene el mismo número de personas. El niño solo ocupa una silla si el cliente lo añade como persona.
 
 
 ### Capacidad
