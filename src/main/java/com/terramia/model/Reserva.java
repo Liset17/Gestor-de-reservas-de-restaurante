@@ -5,7 +5,7 @@ import java.time.LocalTime;
 
 public class Reserva {
 
-    //1. ATRIBUTOS
+    //1. ============== ATRIBUTOS ==============
 
     private static int contador = 1;// genera el ID de cada reserva
 
@@ -16,13 +16,13 @@ public class Reserva {
     private final Cliente cliente;
 
 
-    // Cuantos
+    // ==============Cuantos==============
     private int personas;
     private int ninosMenores3;
     private int tronas;
 
 
-    //cuando
+    //==============cuando==============
     private LocalDate fecha;
     private LocalTime hora;
 
@@ -47,7 +47,7 @@ public class Reserva {
     }
 
 
-    // 3. GETTERS
+    // 3. ==============GETTERS==============
 
     public int getId() {
         return id;
@@ -81,7 +81,7 @@ public class Reserva {
         return estado;
     }
 
-    // 4. SETTERS
+    // 4. ==============SETTERS==============
 
     public void setPersonas(int personas) {
         this.personas = personas;
