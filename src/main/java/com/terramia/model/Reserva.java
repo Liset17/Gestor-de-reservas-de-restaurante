@@ -5,15 +5,15 @@ import java.time.LocalTime;
 
 public class Reserva {
 
-    //1. ATRIBUTOs
+    //1. ATRIBUTOS
 
-    private static int contador = 1;
+    private static int contador = 1;// genera el ID de cada reserva
 
-    //Identificador
-    private int id;
+    //Identificador (final es para hacerlo inmutable)
+    private final int id;
 
     //quien
-    private Cliente cliente;
+    private final Cliente cliente;
 
 
     // Cuantos
@@ -83,7 +83,7 @@ public class Reserva {
 
     // 4. SETTERS
 
-      public void setPersonas(int personas) {
+    public void setPersonas(int personas) {
         this.personas = personas;
     }
 
