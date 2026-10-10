@@ -7,7 +7,7 @@ import java.util.List;
 
 public class MensajeRepository {
 
-    // 1. Lista donde se guarda los mensajes
+    // 1. Lista vacia donde se guarda los mensajes
     private final List<MensajeContacto> mensajes = new ArrayList<>();
 
     // 2. Guardar mensaje
@@ -17,8 +17,9 @@ public class MensajeRepository {
 
 
     // 3. Devuelvo una copia de la lista de mensajes
-    // para que el resto de la aplicación pueda leer los mensajes, pero no modificar
-    // el almacén directamente
+    // para que el resto de la aplicación pueda leer los mensajes
+    // pero no modificar el original directamente
+
     public List<MensajeContacto> obtenerTodos() {
         return new ArrayList<>(mensajes);
     }
