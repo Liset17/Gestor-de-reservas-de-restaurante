@@ -45,9 +45,11 @@ public class ReservaRepository {
     }
 
 
-    // 5. Obtener todas las reservas
-    public List<Reserva> obtenerTodas(){
-        return  new ArrayList<>(reservas);
+    // 5. Devuelvo una copia de la lista de reservas
+    // para que el resto de la aplicación pueda leer las reservas, pero no modificar
+    // el almacén directamente
+    public List<Reserva> obtenerTodas() {
+        return new ArrayList<>(reservas);
     }
 
 }
