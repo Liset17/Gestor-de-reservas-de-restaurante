@@ -19,7 +19,7 @@ public class ReservaService {
     }
 
 
-    // 3. Regla A : Se crea un metodo para la regla entre 1 y 12 personas (con un mensaje para cada caso).
+    //3-. Regla A: Se crea un metodo para la regla entre 1 y 12 personas (con un mensaje para cada caso).
     private void validarPersonas(int personas) throws ReservaException {
 
         if (personas < 1) {
@@ -44,11 +44,11 @@ public class ReservaService {
 
 
         //2-. Se obtiene el momento actual
-        LocalDateTime ahora= LocalDateTime.now();
+        LocalDateTime ahora = LocalDateTime.now();
 
 
-        //3-. Se comprueba si la reserva es para el pasado o actual
-        if (!fechaHoraReserva.isAfter(ahora)){
+        //3-. Se comprueba que la reserva sea para un momento futuro
+        if (!fechaHoraReserva.isAfter(ahora)) {
             throw new ReservaException(
                     "No puedes reservar en una fecha u hora que ya ha pasado."
             );
@@ -69,5 +69,59 @@ public class ReservaService {
 
         return reserva;
     }
+
+
+    //6-.  Regla C: horario de 11:30 a 23:30, cada 30 minutos
+    private void validarHora(LocalTime hora) throws ReservaException {
+
+        // a. Definimos el inicio del horario
+        LocalTime apertura = LocalTime.of(11, 30);
+
+        // b. Definimos el fin del horario
+        LocalTime ultimaReserva = LocalTime.of(23, 30);
+
+
+        // c. Comprobamos que la hora esté dentro del horario
+        if (hora.isBefore(apertura) || hora.isAfter(ultimaReserva)) {
+            throw new ReservaException(
+                    "Solo puedes reservar entre las 11:30 y las 23:30");
+        }
+
+        //d. Comprobamos que la hora sea en punto o/y media (esto es una validación completa y más segura)
+        if (hora.getMinute() % 30 != 0
+                || hora.getSecond() != 0
+                || hora.getNano() != 0) {
+            throw new ReservaException(
+                    "Las reservas son cada 30 minutos (por ejemplo, 19:00 o 19:30)."
+            );
+        }
+
+    }
+
+}
+
+
+//7-. Regla D: Aforo de reservas: máx. 120 personas en el tramo de 2 h
+
+
+//8-. Regla E: Tronas: máx. 20 en el tramo de 2 h (si no quedan puede reserva sin trona)
+
+
+//9-. Regla F: Solapamiento: un cliente no puede tener dos reservas a la vez
+
+
+//10-. Regla G: Aviso de reserva el mismo día
+
+
+//11-. Regla H: Crear / modificar / cancelar
+
+
+//12-. Regla I: Finalizada automática al terminar las 2 h de reserva
+
+
+//13-. Regla J:Código de verificación (SIMULADO)
+
+
+
 
 }
