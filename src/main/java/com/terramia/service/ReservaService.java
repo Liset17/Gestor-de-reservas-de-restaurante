@@ -19,6 +19,8 @@ public class ReservaService {
     private static final int AFORO_MAXIMO = 120;
     // b-. Duración de cada reserva en horas
     private static final int DURACION_HORAS = 2;
+    // c-. Tronas maximo por tramo
+    private static final int TRONAS_MAXIMAS = 20;
 
 
     // 3-. Constructor
@@ -189,9 +191,72 @@ public class ReservaService {
     }
 
 
-    // 10-. Regla E: tronas, máx. 20 en el tramo de 2 h (si no quedan, se puede reservar sin trona)
+    // 10-. Regla E: tronas, máx. 20 en el tramo de 2 h (si no quedan, se puede reservar sin trona).
+    // 10.1-. Calcula las tronas libres en el tramo de 2 h
+    public int calcularTronasDisponibles(LocalDate fecha, LocalTime hora) {
+
+        // a-. Tramo de la nueva reserva
+        LocalDateTime inicioNuevo = LocalDateTime.of(fecha, hora);
+        LocalDateTime finNuevo = inicioNuevo.plusHours(DURACION_HORAS);
+
+        // b-. Acumulador de tronas ya ocupadas
+        int tronasOcupadas = 0;
+
+        for (Reserva reserva : reservaRepository.obtenerTodas()) {
+
+            // c-. Solo cuentan las reservas activas
+            if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+                continue;
+            }
+
+            // d-. Tramo de la reserva existente
+            LocalDateTime inicioExistente =
+                    LocalDateTime.of(reserva.getFecha(), reserva.getHora());
+            LocalDateTime finExistente =
+                    inicioExistente.plusHours(DURACION_HORAS);
+
+            // e-. Si se solapan, sumamos sus tronas
+            boolean seSolapan =
+                    inicioNuevo.isBefore(finExistente)
+                            && finNuevo.isAfter(inicioExistente);
+
+            if (seSolapan) {
+                tronasOcupadas += reserva.getTronas();
+            }
+        }
+
+        // f-. Devolvemos las tronas libres (nunca menos de 0)
+        return Math.max(0, TRONAS_MAXIMAS - tronasOcupadas);
+    }
 
 
+    // 10.2-. Valida la cantidad de tronas que eligió el cliente
+    private void validarTronas(int tronasSolicitadas, LocalDate fecha, LocalTime hora)
+            throws ReservaException {
+
+        // a-. No se permiten cantidades negativas
+        if (tronasSolicitadas < 0) {
+            throw new ReservaException("El número de tronas no puede ser negativo.");
+        }
+
+        // b-. No se pueden pedir más tronas de las que quedan libres
+        int tronasDisponibles = calcularTronasDisponibles(fecha, hora);
+
+        if (tronasSolicitadas > tronasDisponibles) {
+            throw new ReservaException("Solo quedan " + tronasDisponibles
+                    + " tronas disponibles para esta hora.");
+        }
+    }
+
+
+    // 10.3-. Valida el número de niños menores de 3 años
+    private void validarNinos(int ninosMenores3) throws ReservaException {
+
+        // a-. No se permiten cantidades negativas
+        if (ninosMenores3 < 0) {
+            throw new ReservaException("El número de niños no puede ser negativo.");
+        }
+    }
     // 11-. Regla F: solapamiento, un cliente no puede tener dos reservas a la vez
 
 
@@ -207,24 +272,26 @@ public class ReservaService {
     // 15-. Regla J: código de verificación (SIMULADO)
 
 
-    // 16-. Crear una reserva aplicando todas las reglas
-    public Reserva crearReserva(Cliente cliente, int personas, int ninosMenores3,
-                                LocalDate fecha, LocalTime hora) throws ReservaException {
 
-        // a-. Comprobamos que todas las reglas, en orden
+
+    // 16-. Crear una reserva aplicando todas las reglas
+    //Las validaciones son métodos privados y el metodo
+    // publico crearReserva las orquesta antes de crear y guardar la reserva
+    public Reserva crearReserva(Cliente cliente, int personas, int ninosMenores3,
+                                int tronasSolicitadas, LocalDate fecha, LocalTime hora)
+            throws ReservaException {
+
         validarDatosObligatorios(cliente, fecha, hora);
         validarPersonas(personas);
+        validarNinos(ninosMenores3);
         validarHora(hora);
         validarFechaHora(fecha, hora);
         validarAforo(fecha, hora, personas);
+        validarTronas(tronasSolicitadas, fecha, hora);
 
-        // b-. Si  todo es correcto creamos la reserva
         Reserva reserva = new Reserva(cliente, personas, ninosMenores3, fecha, hora);
-
-        // c-. La guardamos en el repositorio
+        reserva.setTronas(tronasSolicitadas);
         reservaRepository.guardar(reserva);
-
-        // d-. La devolvemos (por ejemplo, para mostrar su número al cliente)
         return reserva;
     }
 
