@@ -98,10 +98,12 @@ public class ReservaService {
 
     }
 
-}
 
 
 //7-. Regla D: Aforo de reservas: máx. 120 personas en el tramo de 2 h
+
+
+
 
 
 //8-. Regla E: Tronas: máx. 20 en el tramo de 2 h (si no quedan puede reserva sin trona)
@@ -120,6 +122,7 @@ public class ReservaService {
 
 
 //13-. Regla J:Código de verificación (SIMULADO)
+
 
 
 

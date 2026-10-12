@@ -1,0 +1,6 @@
+   # Archivos de IntelliJ
+   .idea/
+   *.iml
+
+   # Archivos que genera Maven al compilar
+   target/
