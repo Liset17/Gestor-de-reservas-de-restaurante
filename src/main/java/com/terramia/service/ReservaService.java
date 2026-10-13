@@ -230,8 +230,8 @@ public class ReservaService {
     }
 
 
-    // 10.2-. Valida la cantidad de tronas que eligió el cliente
-    private void validarTronas(int tronasSolicitadas, LocalDate fecha, LocalTime hora)
+    // 10.2-. Valida la cantidad de tronas que eligio el cliente
+    private void validarTronas(int personas, int tronasSolicitadas, LocalDate fecha, LocalTime hora)
             throws ReservaException {
 
         // a-. No se permiten cantidades negativas
@@ -239,7 +239,12 @@ public class ReservaService {
             throw new ReservaException("El número de tronas no puede ser negativo.");
         }
 
-        // b-. No se pueden pedir más tronas de las que quedan libres
+        // b-. No se pueden pedir más tronas que personas (cada bebé va con un adulto)
+        if (tronasSolicitadas > personas) {
+            throw new ReservaException("No puedes pedir más tronas que personas en la reserva.");
+        }
+
+        // c-. No se pueden pedir más tronas de las que quedan libres
         int tronasDisponibles = calcularTronasDisponibles(fecha, hora);
 
         if (tronasSolicitadas > tronasDisponibles) {
@@ -249,14 +254,6 @@ public class ReservaService {
     }
 
 
-    // 10.3-. Valida el número de niños menores de 3 años
-    private void validarNinos(int ninosMenores3) throws ReservaException {
-
-        // a-. No se permiten cantidades negativas
-        if (ninosMenores3 < 0) {
-            throw new ReservaException("El número de niños no puede ser negativo.");
-        }
-    }
     // 11-. Regla F: solapamiento, un cliente no puede tener dos reservas a la vez
 
 
@@ -277,19 +274,17 @@ public class ReservaService {
     // 16-. Crear una reserva aplicando todas las reglas
     //Las validaciones son métodos privados y el metodo
     // publico crearReserva las orquesta antes de crear y guardar la reserva
-    public Reserva crearReserva(Cliente cliente, int personas, int ninosMenores3,
-                                int tronasSolicitadas, LocalDate fecha, LocalTime hora)
+    public Reserva crearReserva(Cliente cliente, int personas, int tronasSolicitadas, LocalDate fecha, LocalTime hora)
             throws ReservaException {
 
         validarDatosObligatorios(cliente, fecha, hora);
         validarPersonas(personas);
-        validarNinos(ninosMenores3);
         validarHora(hora);
         validarFechaHora(fecha, hora);
         validarAforo(fecha, hora, personas);
-        validarTronas(tronasSolicitadas, fecha, hora);
+        validarTronas(personas, tronasSolicitadas, fecha, hora);
 
-        Reserva reserva = new Reserva(cliente, personas, ninosMenores3, fecha, hora);
+        Reserva reserva = new Reserva(cliente, personas, fecha, hora);
         reserva.setTronas(tronasSolicitadas);
         reservaRepository.guardar(reserva);
         return reserva;

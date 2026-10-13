@@ -6,7 +6,6 @@ import java.time.LocalTime;
 public class Reserva {
 
     //1. ============== ATRIBUTOS ==============
-
     private static int contador = 1;// genera el ID de cada reserva
 
     //Identificador (final es para hacerlo inmutable)
@@ -18,7 +17,6 @@ public class Reserva {
 
     // ==============Cuantos==============
     private int personas;
-    private int ninosMenores3;
     private int tronas;
 
 
@@ -30,15 +28,13 @@ public class Reserva {
     private EstadoReserva estado;
 
 
-    // ============= CONSTRUCTOR ===============
+    //2. ============= CONSTRUCTOR ===============
 
-    public Reserva(Cliente cliente, int personas, int
-            ninosMenores3, LocalDate fecha, LocalTime hora) {
+    public Reserva(Cliente cliente, int personas, LocalDate fecha, LocalTime hora) {
 
         this.id = contador++;
         this.cliente = cliente;
         this.personas = personas;
-        this.ninosMenores3 = ninosMenores3;
         this.tronas = 0;
         this.fecha = fecha;
         this.hora = hora;
@@ -59,10 +55,6 @@ public class Reserva {
 
     public int getPersonas() {
         return personas;
-    }
-
-    public int getNinosMenores3() {
-        return ninosMenores3;
     }
 
     public int getTronas() {
@@ -87,9 +79,6 @@ public class Reserva {
         this.personas = personas;
     }
 
-    public void setNinosMenores3(int ninosMenores3) {
-        this.ninosMenores3 = ninosMenores3;
-    }
 
     public void setTronas(int tronas) {
         this.tronas = tronas;
