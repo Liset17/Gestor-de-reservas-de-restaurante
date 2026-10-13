@@ -42,14 +42,21 @@ public class ReservaService {
             );
         }
 
-        // b-. La fecha es obligatoria
+        // b-. Comprobar que el móvil está informado
+        if (cliente.getMovil() == null || cliente.getMovil().isBlank()) {
+            throw new ReservaException(
+                    "Debes indicar un número móvil."
+            );
+        }
+
+        // c-. Comprobar que existe una fecha
         if (fecha == null) {
             throw new ReservaException(
                     "Debes indicar una fecha para la reserva."
             );
         }
 
-        // c-. La hora es obligatoria
+        // d-. La hora es obligatoria
         if (hora == null) {
             throw new ReservaException(
                     "Debes indicar una hora para la reserva."
@@ -255,7 +262,44 @@ public class ReservaService {
 
 
     // 11-. Regla F: solapamiento, un cliente no puede tener dos reservas a la vez
+    private void validarSolapamientoCliente(
+            Cliente cliente,
+            LocalDate fecha,
+            LocalTime hora) throws ReservaException {
 
+        // a-. Tramo de la nueva reserva
+        LocalDateTime inicioNuevo = LocalDateTime.of(fecha, hora);
+        LocalDateTime finNuevo = inicioNuevo.plusHours(DURACION_HORAS);
+
+        // b-. Recorremos las reservas de este cliente por su movil
+        for (Reserva reserva : reservaRepository.buscarPorMovil(
+                cliente.getMovil())) {
+
+            // c-. Cuentan solo las reservas activas
+            if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+                continue;
+            }
+
+            // d-. El tramo de la reserva existente
+            LocalDateTime inicioExistente =
+                    LocalDateTime.of(reserva.getFecha(), reserva.getHora());
+
+            LocalDateTime finExistente =
+                    inicioExistente.plusHours(DURACION_HORAS);
+
+            // e-. Comprobamos si los tramos se solapan
+            boolean seSolapan =
+                    inicioNuevo.isBefore(finExistente)
+                            && finNuevo.isAfter(inicioExistente);
+
+            if (seSolapan) {
+                // f-. Si se solapan, lanzamos una excepción
+                throw new ReservaException(
+                        "Ya tienes una reserva el " + reserva.getFecha() + " a las " + reserva.getHora() + " que coincide con ese horario."
+                );
+            }
+        }
+    }
 
     // 12-. Regla G: aviso de reserva el mismo día
 
@@ -269,8 +313,6 @@ public class ReservaService {
     // 15-. Regla J: código de verificación (SIMULADO)
 
 
-
-
     // 16-. Crear una reserva aplicando todas las reglas
     //Las validaciones son métodos privados y el metodo
     // publico crearReserva las orquesta antes de crear y guardar la reserva
@@ -281,6 +323,7 @@ public class ReservaService {
         validarPersonas(personas);
         validarHora(hora);
         validarFechaHora(fecha, hora);
+        validarSolapamientoCliente(cliente, fecha, hora);
         validarAforo(fecha, hora, personas);
         validarTronas(personas, tronasSolicitadas, fecha, hora);
 
