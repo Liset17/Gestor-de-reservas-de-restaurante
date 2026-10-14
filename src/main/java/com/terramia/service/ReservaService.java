@@ -301,7 +301,29 @@ public class ReservaService {
         }
     }
 
-    // 12-. Regla G: aviso de reserva el mismo día
+
+
+
+    // 12-. Regla G: aviso si el cliente ya tiene una reserva ese mismo día
+    public boolean tieneReservaElMismoDia(String movil, LocalDate fecha) {
+
+        // a-. Recorremos las reservas de este cliente
+        for (Reserva reserva : reservaRepository.buscarPorMovil(movil)) {
+
+            // b-. Solo cuentan las reservas activas
+            if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+                continue;
+            }
+
+            // c-. Si la fecha coincide, ya tiene reserva ese día
+            if (reserva.getFecha().equals(fecha)) {
+                return true;
+            }
+        }
+     // d-. Si recorremos todas y ninguna coincide
+        return false;
+    }
+
 
 
     // 13-. Regla H: crear / modificar / cancelar
