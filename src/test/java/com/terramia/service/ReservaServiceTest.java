@@ -294,4 +294,143 @@ void noSePuedeCrearUnaReservaSinMovil() {
     // 3. Comprobar que no se guardó
     assertEquals(0, repositorio.obtenerTodas().size());
 }
+
+
+
+
+//Comprobar que llegar exactamente a 120 personas está permitido
+    @Test
+    void sePuedeCrearUnaReservaQueCompleteElAforoDe120Personas()
+            throws ReservaException {
+
+        // 1. Preparar el repositorio y el servicio
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        // Guardar 9 reservas de 12 personas: 108 en total
+        for (int i = 1; i <= 9; i++) {
+
+            Cliente cliente = new Cliente(
+                    "Cliente",
+                    "Prueba",
+                    "60000000" + i,
+                    "cliente" + i + "@example.com"
+            );
+
+            Reserva reserva = new Reserva(cliente, 12, fecha, hora);
+            repositorio.guardar(reserva);
+        }
+
+        Cliente nuevoCliente = new Cliente(
+                "Juana",
+                "Benítez",
+                "600000010",
+                "juana@example.com"
+        );
+
+        // 2. Crear otra reserva de 12: llegamos a 120 personas
+        Reserva nuevaReserva =
+                servicio.crearReserva(nuevoCliente, 12, 0, fecha, hora);
+
+        // 3. Comprobar que se creó y se guardó
+        assertEquals(12, nuevaReserva.getPersonas());
+        assertEquals(10, repositorio.obtenerTodas().size());
+    }
+
+
+    @Test
+    void noSePuedeCrearUnaReservaQueSupereElAforoDe120Personas() {
+
+        // 1. Preparar: 10 reservas de 12 personas = 120
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        for (int i = 1; i <= 10; i++) {
+
+            Cliente cliente = new Cliente(
+                    "Cliente",
+                    "Prueba",
+                    "60000000" + i,
+                    "cliente" + i + "@example.com"
+            );
+
+            Reserva reserva = new Reserva(cliente, 12, fecha, hora);
+            repositorio.guardar(reserva);
+        }
+
+        Cliente nuevoCliente = new Cliente(
+                "Juana",
+                "Benítez",
+                "600000099",
+                "juana@example.com"
+        );
+
+        // 2. Intentar añadir una persona: serían 121
+        assertThrows(ReservaException.class, () -> {
+            servicio.crearReserva(nuevoCliente, 1, 0, fecha, hora);
+        });
+
+        // 3. Comprobar que siguen guardadas solo las 10 iniciales
+        assertEquals(10, repositorio.obtenerTodas().size());
+    }
+
+
+
+
+//Compruebo  que el servicio revisa también lo que ocurrirá más tarde durante la estancia.
+    @Test
+    void noSePuedeReservarSiElAforoSeSuperaMasTarde() {
+
+        // 1. Preparar
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+
+        // 9 reservas de 12 personas desde las 20:00: total 108
+        for (int i = 1; i <= 9; i++) {
+
+            Cliente cliente = new Cliente(
+                    "Cliente",
+                    "Prueba",
+                    "60000000" + i,
+                    "cliente" + i + "@example.com"
+            );
+
+            Reserva reserva = new Reserva(
+                    cliente, 12, fecha, LocalTime.of(20, 0)
+            );
+            repositorio.guardar(reserva);
+        }
+
+        // Otras 12 personas desde las 20:30: total 120
+        Cliente otroCliente = new Cliente(
+                "Luis", "Pérez", "600000050", "luis@example.com"
+        );
+
+        Reserva otraReserva = new Reserva(
+                otroCliente, 12, fecha, LocalTime.of(20, 30)
+        );
+        repositorio.guardar(otraReserva);
+
+        Cliente nuevoCliente = new Cliente(
+                "Juana", "Benítez", "600000099", "juana@example.com"
+        );
+
+        // 2. Intentar reservar de 19:00 a 21:00
+        assertThrows(ReservaException.class, () -> {
+            servicio.crearReserva(
+                    nuevoCliente, 1, 0, fecha, LocalTime.of(19, 0)
+            );
+        });
+
+        // 3. La nueva reserva no debe guardarse
+        assertEquals(10, repositorio.obtenerTodas().size());
+    }
 }
