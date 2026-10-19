@@ -358,6 +358,33 @@ public class ReservaService {
 
         // 13-. Regla H: crear / modificar / cancelar
 
+    public void cancelarReserva(int id, String movil)
+            throws ReservaException {
+
+        // 1. El sistema busca la reserva si no existe, lanza una excepción
+        Reserva reserva = buscarReservaExistente(id);
+
+        // 2. Comprobar que pertenece al cliente
+        if (!reserva.getCliente().getMovil().equals(movil)) {
+            throw new ReservaException(
+                    "No puedes cancelar una reserva de otro cliente."
+            );
+        }
+
+        // 3. Comprobar que sigue activa
+        if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+            throw new ReservaException(
+                    "Solo puedes cancelar una reserva activa."
+            );
+        }
+
+        // 4. Comprobar que todavía no ha empezado
+        validarFechaHora(reserva.getFecha(), reserva.getHora());
+
+        // 5. Cancelar después de superar todas las comprobaciones
+        reserva.setEstado(EstadoReserva.CANCELADA);
+    }
+
 
         // 14-. Regla I: finalizada automática al terminar las 2 h de reserva
 
