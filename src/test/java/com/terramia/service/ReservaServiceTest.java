@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.terramia.model.Cliente;
 import com.terramia.model.Reserva;
+import com.terramia.model.EstadoReserva;
 
 class ReservaServiceTest {
 
@@ -35,9 +36,6 @@ class ReservaServiceTest {
     }
 
 
-
-
-
     //Se hace una reserva con 3 tronas
     @Test
     void reservaActivaConTresTronasDejaDiecisieteDisponibles() {
@@ -54,7 +52,7 @@ class ReservaServiceTest {
                 "Juana",
                 "Benítez",
                 "600000001",
-                "juana.Beni@example.com"
+                "juana.beni@example.com"
         );
 
         // La reserva empieza ACTIVA y dura de 19:00 a 21:00
@@ -70,5 +68,114 @@ class ReservaServiceTest {
 
         // 3. Comprobar el resultado: 20 - 3 = 17
         assertEquals(17, disponibles);
+    }
+
+
+    //Comprobar que las tronas se liberan justo cuando termina una reserva.
+    @Test
+    void lasTronasSeLiberanJustoAlTerminarLaReserva() {
+
+        // 1. Preparar
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.of(2027, 6, 15);
+
+        Cliente cliente = new Cliente(
+                "Juana",
+                "Benítez",
+                "600000001",
+                "juana.beni@example.com"
+        );
+
+        // Empieza a las 19:00 y termina a las 21:00
+        Reserva reserva = new Reserva(
+                cliente, 4, fecha, LocalTime.of(19, 0)
+        );
+        reserva.setTronas(3);
+        repositorio.guardar(reserva);
+
+        // 2. Consultar justo cuando termina la reserva anterior
+        int disponibles = servicio.calcularTronasDisponibles(
+                fecha, LocalTime.of(21, 0)
+        );
+
+        // 3. Comprobar que las 20 tronas están disponibles
+        assertEquals(20, disponibles);
+    }
+
+
+    //Ahora verificaremos que una reserva cancelada no ocupa tronas, aunque su horario coincida con
+    // la nueva consulta.
+    @Test
+    void unaReservaCanceladaNoOcupaTronas() {
+
+        // 1. Preparar
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.of(2027, 6, 15);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        Cliente cliente = new Cliente(
+                "Juana",
+                "Benítez",
+                "600000001",
+                "juana@example.com"
+        );
+
+        Reserva reserva = new Reserva(cliente, 4, fecha, hora);
+        reserva.setTronas(3);
+        reserva.setEstado(EstadoReserva.CANCELADA);
+
+        repositorio.guardar(reserva);
+
+        // 2. Consultar el mismo horario
+        int disponibles =
+                servicio.calcularTronasDisponibles(fecha, hora);
+
+        // 3. La reserva cancelada no debe consumir sus 3 tronas
+        assertEquals(20, disponibles);
+    }
+
+    //Dos grupos ocupan tronas en momentos distintos y el sistema debe permitir reutilizarlas.
+    @Test
+    void gruposEnMomentosDistintosPermitenReutilizarTronas() {
+
+        // 1. Preparar
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.of(2027, 6, 15);
+
+        Cliente clienteA = new Cliente(
+                "Ana", "García", "600000001", "ana@example.com"
+        );
+
+        Cliente clienteB = new Cliente(
+                "Luis", "Pérez", "600000002", "luis@example.com"
+        );
+
+        // Grupo A: ocupa 10 tronas hasta las 19:30
+        Reserva reservaA = new Reserva(
+                clienteA, 10, fecha, LocalTime.of(17, 30)
+        );
+        reservaA.setTronas(10);
+        repositorio.guardar(reservaA);
+
+        // Grupo B: ocupa 10 tronas desde las 20:30
+        Reserva reservaB = new Reserva(
+                clienteB, 10, fecha, LocalTime.of(20, 30)
+        );
+        reservaB.setTronas(10);
+        repositorio.guardar(reservaB);
+
+        // 2. Consultar disponibilidad de 19:00 a 21:00
+        int disponibles = servicio.calcularTronasDisponibles(
+                fecha, LocalTime.of(19, 0)
+        );
+
+        // 3. Quedan 10 disponibles durante toda la estancia
+        assertEquals(10, disponibles);
     }
 }
