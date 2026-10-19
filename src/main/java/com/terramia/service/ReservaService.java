@@ -149,211 +149,232 @@ public class ReservaService {
     }
 
 
-    // 9-. Regla D: aforo máximo de 120 personas en un tramo de 2 horas
-    private void validarAforo(
-            LocalDate fecha,
-            LocalTime hora,
-            int personas) throws ReservaException {
-
-        // a-. Tramo de la nueva reserva (inicio y fin)
-        LocalDateTime inicioNuevo = LocalDateTime.of(fecha, hora);
-        LocalDateTime finNuevo = inicioNuevo.plusHours(DURACION_HORAS);
-
-        // b-. Se suman las personas de las reservas que se solapan
-        int ocupadas = 0;
-
-        for (Reserva reserva : reservaRepository.obtenerTodas()) {
-
-            // c-. Solo contamos las reservas activas
-            if (reserva.getEstado() != EstadoReserva.ACTIVA) {
-                continue;
-            }
-
-            // d-. Tramo de la reserva existente (inicio y fin)
-            LocalDateTime inicioExistente =
-                    LocalDateTime.of(reserva.getFecha(), reserva.getHora());
-
-            LocalDateTime finExistente =
-                    inicioExistente.plusHours(DURACION_HORAS);
-
-            // e-. Comprobamos si las reservas se solapan
-            boolean seSolapan =
-                    inicioNuevo.isBefore(finExistente)
-                            && finNuevo.isAfter(inicioExistente);
-
-            if (seSolapan) {
-                ocupadas += reserva.getPersonas();
-            }
-        }
-
-        // f-. Se comprueba si quedan plazas libres suficientes
-        int libres = AFORO_MAXIMO - ocupadas;
-
-        if (personas > libres) {
-            throw new ReservaException(
-                    "No hay sitio suficiente en ese horario. "
-                            + "Plazas libres: " + Math.max(0, libres) + "."
-            );
-        }
-    }
-
-
-    // 10-. Regla E: tronas, máx. 20 en el tramo de 2 h (si no quedan, se puede reservar sin trona).
-    // 10.1-. Calcula las tronas libres en el tramo de 2 h
-    public int calcularTronasDisponibles(LocalDate fecha, LocalTime hora) {
+    // 8.1-. Auxiliar: comprueba si una reserva existente se solapa con un tramo nuevo de 2 h
+    private boolean seSolapa(Reserva reserva, LocalDate fecha, LocalTime hora) {
 
         // a-. Tramo de la nueva reserva
         LocalDateTime inicioNuevo = LocalDateTime.of(fecha, hora);
         LocalDateTime finNuevo = inicioNuevo.plusHours(DURACION_HORAS);
 
-        // b-. Acumulador de tronas ya ocupadas
-        int tronasOcupadas = 0;
+        // b-. Tramo de la reserva existente
+        LocalDateTime inicioExistente =
+                LocalDateTime.of(reserva.getFecha(), reserva.getHora());
+        LocalDateTime finExistente =
+                inicioExistente.plusHours(DURACION_HORAS);
 
-        for (Reserva reserva : reservaRepository.obtenerTodas()) {
-
-            // c-. Solo cuentan las reservas activas
-            if (reserva.getEstado() != EstadoReserva.ACTIVA) {
-                continue;
-            }
-
-            // d-. Tramo de la reserva existente
-            LocalDateTime inicioExistente =
-                    LocalDateTime.of(reserva.getFecha(), reserva.getHora());
-            LocalDateTime finExistente =
-                    inicioExistente.plusHours(DURACION_HORAS);
-
-            // e-. Si se solapan, sumamos sus tronas
-            boolean seSolapan =
-                    inicioNuevo.isBefore(finExistente)
-                            && finNuevo.isAfter(inicioExistente);
-
-            if (seSolapan) {
-                tronasOcupadas += reserva.getTronas();
-            }
-        }
-
-        // f-. Devolvemos las tronas libres (nunca menos de 0)
-        return Math.max(0, TRONAS_MAXIMAS - tronasOcupadas);
+        // c-. Se solapan si la nueva empieza antes de que acabe la existente
+        //     y termina después de que empiece la existente
+        return inicioNuevo.isBefore(finExistente)
+                && finNuevo.isAfter(inicioExistente);
     }
 
 
-    // 10.2-. Valida la cantidad de tronas que eligio el cliente
-    private void validarTronas(int personas, int tronasSolicitadas, LocalDate fecha, LocalTime hora)
+
+
+    // 9-. Regla D: aforo máximo de 120 personas durante las 2 horas de reserva
+    private void validarAforo(LocalDate fecha, LocalTime hora, int personas)
             throws ReservaException {
 
-        // a-. No se permiten cantidades negativas
-        if (tronasSolicitadas < 0) {
-            throw new ReservaException("El número de tronas no puede ser negativo.");
-        }
-
-        // b-. No se pueden pedir más tronas que personas (cada bebé va con un adulto)
-        if (tronasSolicitadas > personas) {
-            throw new ReservaException("No puedes pedir más tronas que personas en la reserva.");
-        }
-
-        // c-. No se pueden pedir más tronas de las que quedan libres
-        int tronasDisponibles = calcularTronasDisponibles(fecha, hora);
-
-        if (tronasSolicitadas > tronasDisponibles) {
-            throw new ReservaException("Solo quedan " + tronasDisponibles
-                    + " tronas disponibles para esta hora.");
-        }
-    }
-
-
-    // 11-. Regla F: solapamiento, un cliente no puede tener dos reservas a la vez
-    private void validarSolapamientoCliente(
-            Cliente cliente,
-            LocalDate fecha,
-            LocalTime hora) throws ReservaException {
-
-        // a-. Tramo de la nueva reserva
+        // a-. Inicio de nueva reserva
         LocalDateTime inicioNuevo = LocalDateTime.of(fecha, hora);
-        LocalDateTime finNuevo = inicioNuevo.plusHours(DURACION_HORAS);
 
-        // b-. Recorremos las reservas de este cliente por su movil
-        for (Reserva reserva : reservaRepository.buscarPorMovil(
-                cliente.getMovil())) {
+        // b-. Recorremos las 2 horas en intervalos de 30 minutos(el valor de DURACION_HORAS esta al inicio)
+        for (int minutos = 0; minutos < DURACION_HORAS * 60; minutos += 30) {
 
-            // c-. Cuentan solo las reservas activas
-            if (reserva.getEstado() != EstadoReserva.ACTIVA) {
-                continue;
+            // c-. Comprobando momentos
+            LocalDateTime momento = inicioNuevo.plusMinutes(minutos);
+
+            // d-. Personas que están ocupando plazas en ese momento
+            int ocupadas = 0;
+
+            // e-. Recorremos todas las reservas del restaurante
+            for (Reserva reserva : reservaRepository.obtenerTodas()) {
+
+                // f-. Solo contamos las reservas activas
+                if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+                    continue;
+                }
+
+                // g-. Calculamos cuándo empieza y termina la reserva existente
+                LocalDateTime inicioExistente = LocalDateTime.of(reserva.getFecha(), reserva.getHora());
+                LocalDateTime finExistente = inicioExistente.plusHours(DURACION_HORAS);
+
+                // h-. Comprobamos si la reserva ocupa plazas en este momento
+        boolean estaDentro = !momento.isBefore(inicioExistente)
+                                && momento.isBefore(finExistente);
+
+
+                // i-. Si está dentro, sumamos sus personas
+                if (estaDentro) {
+                    ocupadas += reserva.getPersonas();
+                }
             }
 
-            // d-. El tramo de la reserva existente
-            LocalDateTime inicioExistente =
-                    LocalDateTime.of(reserva.getFecha(), reserva.getHora());
+            // j-. Calculamos las plazas disponibles en este momento
+            int libres = AFORO_MAXIMO - ocupadas;
 
-            LocalDateTime finExistente =
-                    inicioExistente.plusHours(DURACION_HORAS);
-
-            // e-. Comprobamos si los tramos se solapan
-            boolean seSolapan =
-                    inicioNuevo.isBefore(finExistente)
-                            && finNuevo.isAfter(inicioExistente);
-
-            if (seSolapan) {
-                // f-. Si se solapan, lanzamos una excepción
+            // k-. Si el nuevo grupo supera el aforo, rechazamos la reserva
+            if (personas > libres) {
                 throw new ReservaException(
-                        "Ya tienes una reserva el " + reserva.getFecha() + " a las " + reserva.getHora() + " que coincide con ese horario."
+                        "Lo sentimos pero no hay disponibilidad en el horario escogido  "
+                                + "A las " + momento.toLocalTime()
+                                + " solo quedan " + Math.max(0, libres)
+                                + " plazas libres."
                 );
             }
         }
     }
 
+        // 10-. Regla E: tronas, máx. 20 en el tramo de 2 h (si no quedan, se puede reservar sin trona).
+        // 10.1-. Calcula las tronas libres en el tramo de 2 h
+        public int calcularTronasDisponibles(LocalDate fecha, LocalTime hora) {
 
+            // a-. Inicio de la nueva reserva
+            LocalDateTime inicioNuevo = LocalDateTime.of(fecha, hora);
 
+            // b-. Empezamos con el total de tronas del restaurante
+            int tronasDisponibles = TRONAS_MAXIMAS;
 
-    // 12-. Regla G: aviso si el cliente ya tiene una reserva ese mismo día
-    public boolean tieneReservaElMismoDia(String movil, LocalDate fecha) {
+            // c-. Recorremos las dos horas de media hora en media hora
+            for (int minutos = 0;
+                 minutos < DURACION_HORAS * 60;
+                 minutos += 30) {
 
-        // a-. Recorremos las reservas de este cliente
-        for (Reserva reserva : reservaRepository.buscarPorMovil(movil)) {
+                LocalDateTime momento = inicioNuevo.plusMinutes(minutos);
 
-            // b-. Solo cuentan las reservas activas
-            if (reserva.getEstado() != EstadoReserva.ACTIVA) {
-                continue;
+                // d-. Reiniciamos el contador para este momento
+                int tronasOcupadas = 0;
+
+                for (Reserva reserva : reservaRepository.obtenerTodas()) {
+
+                    // e-. Solo cuentan las reservas activas
+                    if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+                        continue;
+                    }
+
+                    LocalDateTime inicioExistente =
+                            LocalDateTime.of(reserva.getFecha(), reserva.getHora());
+
+                    LocalDateTime finExistente =
+                            inicioExistente.plusHours(DURACION_HORAS);
+
+                    // f-. Comprobamos si la reserva está en curso
+                    boolean estaDentro = !momento.isBefore(inicioExistente)
+                            && momento.isBefore(finExistente);
+
+                    if (estaDentro) {
+                        tronasOcupadas += reserva.getTronas();
+                    }
+                }
+
+                // g-. Tronas libres en este momento
+                int libres = Math.max(0, TRONAS_MAXIMAS - tronasOcupadas);
+
+                // h-. Conservamos la menor disponibilidad encontrada
+                tronasDisponibles = Math.min(tronasDisponibles, libres);
             }
 
-            // c-. Si la fecha coincide, ya tiene reserva ese día
-            if (reserva.getFecha().equals(fecha)) {
-                return true;
-            }
+            return tronasDisponibles;
         }
-     // d-. Si recorremos todas y ninguna coincide
-        return false;
-    }
-
-
-
-    // 13-. Regla H: crear / modificar / cancelar
-
-
-    // 14-. Regla I: finalizada automática al terminar las 2 h de reserva
-
-
-    // 15-. Regla J: código de verificación (SIMULADO)
-
-
-    // 16-. Crear una reserva aplicando todas las reglas
-    //Las validaciones son métodos privados y el metodo
-    // publico crearReserva las orquesta antes de crear y guardar la reserva
-    public Reserva crearReserva(Cliente cliente, int personas, int tronasSolicitadas, LocalDate fecha, LocalTime hora)
+        // 10.2-. Valida la cantidad de tronas que eligio el cliente
+        private void validarTronas ( int personas, int tronasSolicitadas, LocalDate fecha, LocalTime hora)
             throws ReservaException {
 
-        validarDatosObligatorios(cliente, fecha, hora);
-        validarPersonas(personas);
-        validarHora(hora);
-        validarFechaHora(fecha, hora);
-        validarSolapamientoCliente(cliente, fecha, hora);
-        validarAforo(fecha, hora, personas);
-        validarTronas(personas, tronasSolicitadas, fecha, hora);
+            // a-. No se permiten cantidades negativas
+            if (tronasSolicitadas < 0) {
+                throw new ReservaException("El número de tronas no puede ser negativo.");
+            }
 
-        Reserva reserva = new Reserva(cliente, personas, fecha, hora);
-        reserva.setTronas(tronasSolicitadas);
-        reservaRepository.guardar(reserva);
-        return reserva;
+            // b-. No se pueden pedir más tronas que personas (cada bebé va con un adulto)
+            if (tronasSolicitadas > personas) {
+                throw new ReservaException("No puedes pedir más tronas que personas en la reserva.");
+            }
+
+            // c-. No se pueden pedir más tronas de las que quedan libres
+            int tronasDisponibles = calcularTronasDisponibles(fecha, hora);
+
+            if (tronasSolicitadas > tronasDisponibles) {
+                throw new ReservaException("Solo quedan " + tronasDisponibles
+                        + " tronas disponibles para esta hora.");
+
+            }
+        }
+
+
+        // 11-. Regla F: solapamiento, un cliente no puede tener dos reservas a la vez
+        private void validarSolapamientoCliente (Cliente cliente, LocalDate fecha, LocalTime hora)
+            throws ReservaException {
+
+            // a-. Recorremos las reservas de este cliente por su móvil
+            for (Reserva reserva : reservaRepository.buscarPorMovil(cliente.getMovil())) {
+
+                // b-. Solo cuentan las reservas activas
+                if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+                    continue;
+                }
+
+                // c-. Si se solapa con el tramo nuevo, lanzamos una excepción
+                if (seSolapa(reserva, fecha, hora)) {
+                    throw new ReservaException(
+                            "Ya tienes una reserva el " + reserva.getFecha() + " a las " + reserva.getHora()
+                                    + " que coincide con ese horario."
+                    );
+                }
+
+            }
+        }
+
+
+        // 12-. Regla G: aviso si el cliente ya tiene una reserva ese mismo día
+        public boolean tieneReservaElMismoDia (String movil, LocalDate fecha){
+
+            // a-. Recorremos las reservas de este cliente
+            for (Reserva reserva : reservaRepository.buscarPorMovil(movil)) {
+
+                // b-. Solo cuentan las reservas activas
+                if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+                    continue;
+                }
+
+                // c-. Si la fecha coincide, ya tiene reserva ese día
+                if (reserva.getFecha().equals(fecha)) {
+                    return true;
+                }
+            }
+            //d-. Si recorremos todas y ninguna coincide
+            return false;
+        }
+
+
+        // 13-. Regla H: crear / modificar / cancelar
+
+
+        // 14-. Regla I: finalizada automática al terminar las 2 h de reserva
+
+
+        // 15-. Regla J: código de verificación (SIMULADO)
+
+
+        // 16-. Crear una reserva aplicando todas las reglas
+        //Las validaciones son métodos privados y el metodo
+        // publico crearReserva las orquesta antes de crear y guardar la reserva
+        public Reserva crearReserva (Cliente cliente,int personas, int tronasSolicitadas, LocalDate fecha, LocalTime
+        hora)
+            throws ReservaException {
+
+            validarDatosObligatorios(cliente, fecha, hora);
+            validarPersonas(personas);
+            validarHora(hora);
+            validarFechaHora(fecha, hora);
+            validarSolapamientoCliente(cliente, fecha, hora);
+            validarAforo(fecha, hora, personas);
+            validarTronas(personas, tronasSolicitadas, fecha, hora);
+
+            Reserva reserva = new Reserva(cliente, personas, fecha, hora);
+            reserva.setTronas(tronasSolicitadas);
+            reservaRepository.guardar(reserva);
+            return reserva;
+        }
+
     }
-
-}
 
