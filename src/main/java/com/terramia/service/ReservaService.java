@@ -30,10 +30,8 @@ public class ReservaService {
 
 
     // 4-. Regla 0: los datos obligatorios no deben estar vacíos
-    private void validarDatosObligatorios(
-            Cliente cliente,
-            LocalDate fecha,
-            LocalTime hora) throws ReservaException {
+    private void validarDatosObligatorios(Cliente cliente, LocalDate fecha,
+    LocalTime hora) throws ReservaException {
 
         // a-. El cliente es obligatorio
         if (cliente == null) {
@@ -41,6 +39,18 @@ public class ReservaService {
                     "Faltan los datos del cliente."
             );
         }
+        if (cliente.getNombre() == null || cliente.getNombre().isBlank()) {
+            throw new ReservaException("Es obligatorio indicar tu nombre para continuar tu reserva.");
+        }
+
+        if (cliente.getApellidos() == null || cliente.getApellidos().isBlank()) {
+            throw new ReservaException("debes indicar tus apellidos.");
+        }
+
+        if (cliente.getCorreo() == null || cliente.getCorreo().isBlank()) {
+            throw new ReservaException("Debes indicar un correo electrónico.");
+        }
+
 
         // b-. Comprobar que el móvil está informado
         if (cliente.getMovil() == null || cliente.getMovil().isBlank()) {

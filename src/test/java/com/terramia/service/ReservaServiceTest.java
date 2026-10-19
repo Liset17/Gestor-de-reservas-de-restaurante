@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.terramia.model.Cliente;
 import com.terramia.model.Reserva;
 import com.terramia.model.EstadoReserva;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ReservaServiceTest {
 
@@ -138,7 +139,8 @@ class ReservaServiceTest {
         assertEquals(20, disponibles);
     }
 
-    //Dos grupos ocupan tronas en momentos distintos y el sistema debe permitir reutilizarlas.
+    //Confirmamos que el sistema reutiliza las tronas de grupos que están en momentos distintos, sin sumarlos como si coincidieran.
+    // Osea, dos grupos ocupan tronas en momentos distintos y el sistema debe permitir reutilizarlas.
     @Test
     void gruposEnMomentosDistintosPermitenReutilizarTronas() {
 
@@ -178,4 +180,118 @@ class ReservaServiceTest {
         // 3. Quedan 10 disponibles durante toda la estancia
         assertEquals(10, disponibles);
     }
+
+    //Prueba de nombre obligatoria, queremos comprobar que, si el nombre está vacío,
+    // crearReserva() lanza una ReservaException y no guarda la reserva
+    @Test
+    void noSePuedeCrearUnaReservaSinNombre() {
+
+        // 1. Preparar
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "",
+                "Benítez",
+                "600000001",
+                "juana@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        // 2. Intentar crearla y comprobar que lanza la excepción
+        assertThrows(ReservaException.class, () -> {
+            servicio.crearReserva(cliente, 4, 0, fecha, hora);
+        });
+
+        // 3. Comprobar que no se ha guardado ninguna reserva
+        assertEquals(0, repositorio.obtenerTodas().size());
+    }
+
+
+    //Apellidos obligatorios
+    @Test
+    void noSePuedeCrearUnaReservaSinApellidos() {
+
+        // 1. Preparar: solo faltan los apellidos
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "Juana",
+                "",
+                "600000001",
+                "juana@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        // 2. Comprobar que se rechaza la reserva
+        assertThrows(ReservaException.class, () -> {
+            servicio.crearReserva(cliente, 4, 0, fecha, hora);
+        });
+
+        // 3. Comprobar que no se guardó
+        assertEquals(0, repositorio.obtenerTodas().size());
+    }
+
+
+    //Correo electronico obligatorio
+
+    @Test
+    void noSePuedeCrearUnaReservaSinCorreo() {
+
+        // 1. Preparar: solo falta el correo
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "Juana",
+                "Benítez",
+                "600000001",
+                ""
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        // 2. Comprobar que se rechaza la reserva
+        assertThrows(ReservaException.class, () -> {
+            servicio.crearReserva(cliente, 4, 0, fecha, hora);
+        });
+
+        // 3. Comprobar que no se guardó
+        assertEquals(0, repositorio.obtenerTodas().size());
+    }
+
+
+
+    //Móvil obligatorio
+@Test
+void noSePuedeCrearUnaReservaSinMovil() {
+
+    // 1. Preparar: solo falta el móvil
+    ReservaRepository repositorio = new ReservaRepository();
+    ReservaService servicio = new ReservaService(repositorio);
+
+    Cliente cliente = new Cliente(
+            "Juana",
+            "Benítez",
+            "",
+            "juana@example.com"
+    );
+
+    LocalDate fecha = LocalDate.now().plusDays(1);
+    LocalTime hora = LocalTime.of(19, 0);
+
+    // 2. Comprobar que se rechaza la reserva
+    assertThrows(ReservaException.class, () -> {
+        servicio.crearReserva(cliente, 4, 0, fecha, hora);
+    });
+
+    // 3. Comprobar que no se guardó
+    assertEquals(0, repositorio.obtenerTodas().size());
+}
 }
