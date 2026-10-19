@@ -361,7 +361,7 @@ public class ReservaService {
     public void cancelarReserva(int id, String movil)
             throws ReservaException {
 
-        // 1. El sistema busca la reserva si no existe, lanza una excepción
+        // 1. El sistema busca la reserva si no existe, lanza una excepcion
         Reserva reserva = buscarReservaExistente(id);
 
         // 2. Comprobar que pertenece al cliente
@@ -378,7 +378,7 @@ public class ReservaService {
             );
         }
 
-        // 4. Comprobar que todavía no ha empezado
+        // 4. Comprobar que todavia no ha empezado
         validarFechaHora(reserva.getFecha(), reserva.getHora());
 
         // 5. Cancelar después de superar todas las comprobaciones

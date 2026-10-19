@@ -433,4 +433,193 @@ void noSePuedeCrearUnaReservaSinMovil() {
         // 3. La nueva reserva no debe guardarse
         assertEquals(10, repositorio.obtenerTodas().size());
     }
+
+
+
+//Probaremos que cancelarReserva() cambia el estado y libera las tronas.
+    @Test
+    void cancelarUnaReservaCambiaSuEstadoYLiberaSusTronas()
+            throws ReservaException {
+
+        // 1. Preparar una reserva futura con 3 tronas
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        Cliente cliente = new Cliente(
+                "Juana",
+                "Benítez",
+                "600000001",
+                "juana@example.com"
+        );
+
+        Reserva reserva = servicio.crearReserva(
+                cliente, 4, 3, fecha, hora
+        );
+
+        // Antes de cancelar, sus 3 tronas están ocupadas
+        assertEquals(
+                17, servicio.calcularTronasDisponibles(fecha, hora)
+        );
+
+        // 2. Cancelar indicando la reserva y el móvil de su cliente
+        servicio.cancelarReserva(
+                reserva.getId(), cliente.getMovil()
+        );
+
+        // 3. Comprobar el resultado
+        Reserva reservaGuardada =
+                repositorio.buscarPorId(reserva.getId());
+
+        assertEquals(EstadoReserva.CANCELADA, reservaGuardada.getEstado());
+        assertEquals(20, servicio.calcularTronasDisponibles(fecha, hora));
+        assertEquals(1, repositorio.obtenerTodas().size());
+    }
+
+
+
+//Comprobamos que otro cliente no pueda cancelarla
+    @Test
+    void noSePuedeCancelarUnaReservaDeOtroCliente()
+            throws ReservaException {
+
+        // 1. Preparar una reserva de Juana
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        Cliente cliente = new Cliente(
+                "Juana",
+                "Benítez",
+                "600000001",
+                "juana@example.com"
+        );
+
+        Reserva reserva = servicio.crearReserva(
+                cliente, 4, 3, fecha, hora
+        );
+
+        // 2. Intentar cancelarla con un móvil distinto
+        assertThrows(ReservaException.class, () -> {
+            servicio.cancelarReserva(
+                    reserva.getId(), "600000099"
+            );
+        });
+
+        // 3. Comprobar que sigue activa y mantiene sus tronas ocupadas
+        assertEquals(EstadoReserva.ACTIVA, reserva.getEstado());
+        assertEquals(
+                17, servicio.calcularTronasDisponibles(fecha, hora)
+        );
+    }
+
+
+
+    //Comprobamos que no se pueda cancelar una reserva que ya empezo
+    @Test
+    void noSePuedeCancelarUnaReservaQueYaEmpezo() {
+
+        // 1. Preparar una reserva de ayer
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "Juana",
+                "Benítez",
+                "600000001",
+                "juana@example.com"
+        );
+
+        Reserva reserva = new Reserva(
+                cliente,
+                4,
+                LocalDate.now().minusDays(1),
+                LocalTime.of(19, 0)
+        );
+
+        repositorio.guardar(reserva);
+
+        // 2. Intentar cancelarla con el movil correcto
+        assertThrows(ReservaException.class, () -> {
+            servicio.cancelarReserva(
+                    reserva.getId(), cliente.getMovil()
+            );
+        });
+
+        // 3. Comprobar que no se cambio su estado
+        assertEquals(EstadoReserva.ACTIVA, reserva.getEstado());
+    }
+
+
+
+//Comprobamos que una reserva cancelada no se pueda cancelar otra vez
+    @Test
+    void noSePuedeCancelarDosVecesLaMismaReserva()
+            throws ReservaException {
+
+        // 1. Preparar una reserva futura
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "Juana",
+                "Benítez",
+                "600000001",
+                "juana@example.com"
+        );
+
+        Reserva reserva = servicio.crearReserva(
+                cliente,
+                4,
+                3,
+                LocalDate.now().plusDays(1),
+                LocalTime.of(19, 0)
+        );
+
+        // La primera cancelación debe funcionar
+        servicio.cancelarReserva(
+                reserva.getId(), cliente.getMovil()
+        );
+
+        // 2. La segunda debe rechazarse
+        assertThrows(ReservaException.class, () -> {
+            servicio.cancelarReserva(
+                    reserva.getId(), cliente.getMovil()
+            );
+        });
+
+        // 3. La reserva sigue cancelada y no se ha duplicado
+        assertEquals(EstadoReserva.CANCELADA, reserva.getEstado());
+        assertEquals(1, repositorio.obtenerTodas().size());
+    }
+
+
+
+    //Intentar cancelar una reserva que no existe.
+
+    @Test
+    void noSePuedeCancelarUnaReservaQueNoExiste() {
+
+        // 1. Preparar un repositorio vacío
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        // 2. Intentar cancelar un ID que no está guardado
+        ReservaException error = assertThrows(
+                ReservaException.class,
+                () -> servicio.cancelarReserva(999, "600000001")
+        );
+
+        // 3. Comprobar el motivo del rechazo
+        assertEquals(
+                "No existe ninguna reserva con el número 999.",
+                error.getMessage()
+        );
+
+        assertEquals(0, repositorio.obtenerTodas().size());
+    }
 }
