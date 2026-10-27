@@ -291,14 +291,22 @@ public class ReservaService {
         }
 
         return tronasDisponibles;
-    } // Cierra el cálculo de tronas
+    }
 
     // 10.2-. Validar las tronas solicitadas
+    private void validarTronas(int personas, int tronasSolicitadas,LocalDate fecha,
+            LocalTime hora) throws ReservaException {
+
+        validarTronas(personas, tronasSolicitadas, fecha, hora, null);
+    }
+
+    // permite recibir el ID de la reserva que se modifica
     private void validarTronas(
             int personas,
             int tronasSolicitadas,
             LocalDate fecha,
-            LocalTime hora) throws ReservaException {
+            LocalTime hora,
+            Integer idReservaExcluir) throws ReservaException {
 
         if (tronasSolicitadas < 0) {
             throw new ReservaException(
@@ -312,7 +320,9 @@ public class ReservaService {
             );
         }
 
-        int tronasDisponibles = calcularTronasDisponibles(fecha, hora);
+        // pasamos también el ID que debe excluirse
+        int tronasDisponibles =
+                calcularTronasDisponibles(fecha, hora, idReservaExcluir);
 
         if (tronasSolicitadas > tronasDisponibles) {
             throw new ReservaException(
@@ -321,8 +331,6 @@ public class ReservaService {
             );
         }
     }
-
-
 
 
         // 11-. Regla F: solapamiento, un cliente no puede tener dos reservas a la vez
