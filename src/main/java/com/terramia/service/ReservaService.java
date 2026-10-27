@@ -178,55 +178,61 @@ public class ReservaService {
                 && finNuevo.isAfter(inicioExistente);
     }
 
+// 9-. Regla D: aforo máximo de 120 personas durante las 2 horas
 
-
-
-    // 9-. Regla D: aforo máximo de 120 personas durante las 2 horas de reserva
+    // Al crear, no excluimos ninguna reserva
     private void validarAforo(LocalDate fecha, LocalTime hora, int personas)
             throws ReservaException {
+        validarAforo(fecha, hora, personas, null);
+    }
 
-        // a-. Inicio de nueva reserva
+    // Al modificar, podemos excluir la reserva original del cálculo
+    private void validarAforo(
+            LocalDate fecha,
+            LocalTime hora,
+            int personas,
+            Integer idReservaExcluir) throws ReservaException {
+
         LocalDateTime inicioNuevo = LocalDateTime.of(fecha, hora);
 
-        // b-. Recorremos las 2 horas en intervalos de 30 minutos(el valor de DURACION_HORAS esta al inicio)
-        for (int minutos = 0; minutos < DURACION_HORAS * 60; minutos += 30) {
+        for ( int minutos = 0;
+             minutos < DURACION_HORAS * 60;
+             minutos += 30) {
 
-            // c-. Comprobando momentos
             LocalDateTime momento = inicioNuevo.plusMinutes(minutos);
-
-            // d-. Personas que están ocupando plazas en ese momento
             int ocupadas = 0;
 
-            // e-. Recorremos todas las reservas del restaurante
             for (Reserva reserva : reservaRepository.obtenerTodas()) {
 
-                // f-. Solo contamos las reservas activas
+                // Solo se omite del cálculo; no se borra ni se cancela
+                if (idReservaExcluir != null
+                        && reserva.getId() == idReservaExcluir.intValue()) {
+                    continue;
+                }
+
                 if (reserva.getEstado() != EstadoReserva.ACTIVA) {
                     continue;
                 }
 
-                // g-. Calculamos cuándo empieza y termina la reserva existente
-                LocalDateTime inicioExistente = LocalDateTime.of(reserva.getFecha(), reserva.getHora());
-                LocalDateTime finExistente = inicioExistente.plusHours(DURACION_HORAS);
+                LocalDateTime inicioExistente =
+                        LocalDateTime.of(reserva.getFecha(), reserva.getHora());
 
-                // h-. Comprobamos si la reserva ocupa plazas en este momento
-        boolean estaDentro = !momento.isBefore(inicioExistente)
-                                && momento.isBefore(finExistente);
+                LocalDateTime finExistente =
+                        inicioExistente.plusHours(DURACION_HORAS);
 
+                boolean estaDentro = !momento.isBefore(inicioExistente)
+                        && momento.isBefore(finExistente);
 
-                // i-. Si está dentro, sumamos sus personas
                 if (estaDentro) {
                     ocupadas += reserva.getPersonas();
                 }
             }
 
-            // j-. Calculamos las plazas disponibles en este momento
             int libres = AFORO_MAXIMO - ocupadas;
 
-            // k-. Si el nuevo grupo supera el aforo, rechazamos la reserva
             if (personas > libres) {
                 throw new ReservaException(
-                        "Lo sentimos pero no hay disponibilidad en el horario escogido  "
+                        "Lo sentimos, no hay disponibilidad en el horario escogido. "
                                 + "A las " + momento.toLocalTime()
                                 + " solo quedan " + Math.max(0, libres)
                                 + " plazas libres."
@@ -234,6 +240,8 @@ public class ReservaService {
             }
         }
     }
+
+
 
         // 10-. Regla E: tronas, máx. 20 en el tramo de 2 h (si no quedan, se puede reservar sin trona).
         // 10.1-. Calcula las tronas libres en el tramo de 2 h
@@ -315,24 +323,41 @@ public class ReservaService {
         private void validarSolapamientoCliente (Cliente cliente, LocalDate fecha, LocalTime hora)
             throws ReservaException {
 
-            // a-. Recorremos las reservas de este cliente por su móvil
-            for (Reserva reserva : reservaRepository.buscarPorMovil(cliente.getMovil())) {
+            validarSolapamientoCliente(cliente, fecha, hora, null);
+        }
 
-                // b-. Solo cuentan las reservas activas
-                if (reserva.getEstado() != EstadoReserva.ACTIVA) {
-                    continue;
-                }
+    // Permite excluir la reserva que estamos modificando
+    private void validarSolapamientoCliente(
+            Cliente cliente,
+            LocalDate fecha,
+            LocalTime hora,
+            Integer idReservaExcluir) throws ReservaException {
 
-                // c-. Si se solapa con el tramo nuevo, lanzamos una excepción
-                if (seSolapa(reserva, fecha, hora)) {
-                    throw new ReservaException(
-                            "Ya tienes una reserva el " + reserva.getFecha() + " a las " + reserva.getHora()
-                                    + " que coincide con ese horario."
-                    );
-                }
+        for (Reserva reserva :
+                reservaRepository.buscarPorMovil(cliente.getMovil())) {
 
+            // Saltamos la propia reserva que se está modificando
+            if (idReservaExcluir != null
+                    && reserva.getId() == idReservaExcluir.intValue()) {
+                continue;
+            }
+
+            if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+                continue;
+            }
+
+            if (seSolapa(reserva, fecha, hora)) {
+                throw new ReservaException(
+                        "Ya tienes una reserva el "
+                                + reserva.getFecha()
+                                + " a las "
+                                + reserva.getHora()
+                                + " que coincide con ese horario."
+                );
             }
         }
+     }
+
 
 
         // 12-. Regla G: aviso si el cliente ya tiene una reserva ese mismo día
