@@ -187,18 +187,14 @@ public class ReservaService {
     }
 
     // Al modificar, podemos excluir la reserva original del cálculo
-    private void validarAforo(
-            LocalDate fecha,
-            LocalTime hora,
-            int personas,
-            Integer idReservaExcluir) throws ReservaException {
+    private void validarAforo(LocalDate fecha, LocalTime hora,int personas, Integer idReservaExcluir)
+            throws ReservaException {
 
         LocalDateTime inicioNuevo = LocalDateTime.of(fecha, hora);
 
         for ( int minutos = 0;
              minutos < DURACION_HORAS * 60;
              minutos += 30) {
-
             LocalDateTime momento = inicioNuevo.plusMinutes(minutos);
             int ocupadas = 0;
 
@@ -246,77 +242,87 @@ public class ReservaService {
         // 10-. Regla E: tronas, máx. 20 en el tramo de 2 h (si no quedan, se puede reservar sin trona).
         // 10.1-. Calcula las tronas libres en el tramo de 2 h
         public int calcularTronasDisponibles(LocalDate fecha, LocalTime hora) {
+            return calcularTronasDisponibles(fecha, hora, null);
+        }
 
-            // a-. Inicio de la nueva reserva
-            LocalDateTime inicioNuevo = LocalDateTime.of(fecha, hora);
+    // Consulta que permite excluir la reserva que se modifica
+    private int calcularTronasDisponibles(
+            LocalDate fecha,
+            LocalTime hora,
+            Integer idReservaExcluir) {
 
-            // b-. Empezamos con el total de tronas del restaurante
-            int tronasDisponibles = TRONAS_MAXIMAS;
+        LocalDateTime inicioNuevo = LocalDateTime.of(fecha, hora);
+        int tronasDisponibles = TRONAS_MAXIMAS;
 
-            // c-. Recorremos las dos horas de media hora en media hora
-            for (int minutos = 0;
-                 minutos < DURACION_HORAS * 60;
-                 minutos += 30) {
+        for (int minutos = 0;
+             minutos < DURACION_HORAS * 60;
+             minutos += 30) {
 
-                LocalDateTime momento = inicioNuevo.plusMinutes(minutos);
+            LocalDateTime momento = inicioNuevo.plusMinutes(minutos);
+            int tronasOcupadas = 0;
 
-                // d-. Reiniciamos el contador para este momento
-                int tronasOcupadas = 0;
+            for (Reserva reserva : reservaRepository.obtenerTodas()) {
 
-                for (Reserva reserva : reservaRepository.obtenerTodas()) {
-
-                    // e-. Solo cuentan las reservas activas
-                    if (reserva.getEstado() != EstadoReserva.ACTIVA) {
-                        continue;
-                    }
-
-                    LocalDateTime inicioExistente =
-                            LocalDateTime.of(reserva.getFecha(), reserva.getHora());
-
-                    LocalDateTime finExistente =
-                            inicioExistente.plusHours(DURACION_HORAS);
-
-                    // f-. Comprobamos si la reserva está en curso
-                    boolean estaDentro = !momento.isBefore(inicioExistente)
-                            && momento.isBefore(finExistente);
-
-                    if (estaDentro) {
-                        tronasOcupadas += reserva.getTronas();
-                    }
+                if (idReservaExcluir != null
+                        && reserva.getId() == idReservaExcluir.intValue()) {
+                    continue;
                 }
 
-                // g-. Tronas libres en este momento
-                int libres = Math.max(0, TRONAS_MAXIMAS - tronasOcupadas);
+                if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+                    continue;
+                }
 
-                // h-. Conservamos la menor disponibilidad encontrada
-                tronasDisponibles = Math.min(tronasDisponibles, libres);
+                LocalDateTime inicioExistente =
+                        LocalDateTime.of(reserva.getFecha(), reserva.getHora());
+
+                LocalDateTime finExistente =
+                        inicioExistente.plusHours(DURACION_HORAS);
+
+                boolean estaDentro = !momento.isBefore(inicioExistente)
+                        && momento.isBefore(finExistente);
+
+                if (estaDentro) {
+                    tronasOcupadas += reserva.getTronas();
+                }
             }
 
-            return tronasDisponibles;
+            int libres = Math.max(0, TRONAS_MAXIMAS - tronasOcupadas);
+            tronasDisponibles = Math.min(tronasDisponibles, libres);
         }
-        // 10.2-. Valida la cantidad de tronas que eligio el cliente
-        private void validarTronas ( int personas, int tronasSolicitadas, LocalDate fecha, LocalTime hora)
-            throws ReservaException {
 
-            // a-. No se permiten cantidades negativas
-            if (tronasSolicitadas < 0) {
-                throw new ReservaException("El número de tronas no puede ser negativo.");
-            }
+        return tronasDisponibles;
+    } // Cierra el cálculo de tronas
 
-            // b-. No se pueden pedir más tronas que personas (cada bebé va con un adulto)
-            if (tronasSolicitadas > personas) {
-                throw new ReservaException("No puedes pedir más tronas que personas en la reserva.");
-            }
+    // 10.2-. Validar las tronas solicitadas
+    private void validarTronas(
+            int personas,
+            int tronasSolicitadas,
+            LocalDate fecha,
+            LocalTime hora) throws ReservaException {
 
-            // c-. No se pueden pedir más tronas de las que quedan libres
-            int tronasDisponibles = calcularTronasDisponibles(fecha, hora);
-
-            if (tronasSolicitadas > tronasDisponibles) {
-                throw new ReservaException("Solo quedan " + tronasDisponibles
-                        + " tronas disponibles para esta hora.");
-
-            }
+        if (tronasSolicitadas < 0) {
+            throw new ReservaException(
+                    "El número de tronas no puede ser negativo."
+            );
         }
+
+        if (tronasSolicitadas > personas) {
+            throw new ReservaException(
+                    "No puedes pedir más tronas que personas en la reserva."
+            );
+        }
+
+        int tronasDisponibles = calcularTronasDisponibles(fecha, hora);
+
+        if (tronasSolicitadas > tronasDisponibles) {
+            throw new ReservaException(
+                    "Solo quedan " + tronasDisponibles
+                            + " tronas disponibles para esta hora."
+            );
+        }
+    }
+
+
 
 
         // 11-. Regla F: solapamiento, un cliente no puede tener dos reservas a la vez
