@@ -622,4 +622,96 @@ void noSePuedeCrearUnaReservaSinMovil() {
 
         assertEquals(0, repositorio.obtenerTodas().size());
     }
+ veservaSinDuplicarla()
+            throws ReservaException {
+
+        // 1. Preparar la reserva original
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María",
+                "García",
+                "600000001",
+                "maria@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        Reserva reserva = servicio.crearReserva(
+                cliente, 4, 1, fecha, hora
+        );
+
+        int idOriginal = reserva.getId();
+
+        // 2. Modificar la misma reserva
+        servicio.modificarReserva(
+                idOriginal, cliente.getMovil(), 6, 2, fecha, hora
+        );
+
+        // 3. Consultar lo que quedó guardado
+        Reserva guardada = repositorio.buscarPorId(idOriginal);
+
+        assertEquals(6, guardada.getPersonas());
+        assertEquals(2, guardada.getTronas());
+        assertEquals(EstadoReserva.ACTIVA, guardada.getEstado());
+        assertEquals(1, repositorio.obtenerTodas().size());
+        assertEquals(18, servicio.calcularTronasDisponibles(fecha, hora));
+    }
+
+
+    @Test
+    void modificarSinAforoConservaLaReservaOriginal()
+            throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        // Otros clientes ocupan 114 plazas: 9 × 12 + 6
+        for (int i = 1; i <= 10; i++) {
+            Cliente cliente = new Cliente(
+                    "Cliente", "Prueba",
+                    "60000000" + i,
+                    "cliente" + i + "@example.com"
+            );
+
+            int personas = (i <= 9) ? 12 : 6;
+
+            repositorio.guardar(
+                    new Reserva(cliente, personas, fecha, hora)
+            );
+        }
+
+        Cliente maria = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        // Total ocupado: 114 + 4 = 118
+        Reserva reserva = servicio.crearReserva(
+                maria, 4, 1, fecha, hora
+        );
+
+        // Pasar a 7 supondría 121 personas: debe rechazarse
+        assertThrows(ReservaException.class, () -> {
+            servicio.modificarReserva(
+                    reserva.getId(), maria.getMovil(),
+                    7, 2, fecha, hora
+            );
+        });
+
+        // Conserva todos sus datos originales
+        Reserva guardada = repositorio.buscarPorId(reserva.getId());
+
+        assertEquals(4, guardada.getPersonas());
+        assertEquals(1, guardada.getTronas());
+        assertEquals(fecha, guardada.getFecha());
+        assertEquals(hora, guardada.getHora());
+        assertEquals(EstadoReserva.ACTIVA, guardada.getEstado());
+        assertEquals(11, repositorio.obtenerTodas().size());
+    }
 }
