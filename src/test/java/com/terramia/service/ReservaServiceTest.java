@@ -622,8 +622,13 @@ void noSePuedeCrearUnaReservaSinMovil() {
 
         assertEquals(0, repositorio.obtenerTodas().size());
     }
- veservaSinDuplicarla()
-            throws ReservaException {
+
+
+
+    // Comprueba que la reserva cambia de 4 personas y 1 trona a
+// 6 personas y 2 tronas, sigue activa y no se duplica.
+    @Test
+    void sePuedeModificarUnaReservaSinDuplicarla() throws ReservaException {
 
         // 1. Preparar la reserva original
         ReservaRepository repositorio = new ReservaRepository();
@@ -661,6 +666,9 @@ void noSePuedeCrearUnaReservaSinMovil() {
     }
 
 
+
+    // Comprueba si el cambio supera el aforo de 120 personas,
+// se rechaza y la reserva conserva todos sus datos originales.
     @Test
     void modificarSinAforoConservaLaReservaOriginal()
             throws ReservaException {
