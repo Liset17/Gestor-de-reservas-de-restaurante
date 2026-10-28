@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.terramia.model.Cliente;
 import com.terramia.model.Reserva;
 import com.terramia.model.EstadoReserva;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ReservaServiceTest {
@@ -267,38 +268,35 @@ class ReservaServiceTest {
     }
 
 
-
     //Móvil obligatorio
-@Test
-void noSePuedeCrearUnaReservaSinMovil() {
+    @Test
+    void noSePuedeCrearUnaReservaSinMovil() {
 
-    // 1. Preparar: solo falta el móvil
-    ReservaRepository repositorio = new ReservaRepository();
-    ReservaService servicio = new ReservaService(repositorio);
+        // 1. Preparar: solo falta el móvil
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
 
-    Cliente cliente = new Cliente(
-            "Juana",
-            "Benítez",
-            "",
-            "juana@example.com"
-    );
+        Cliente cliente = new Cliente(
+                "Juana",
+                "Benítez",
+                "",
+                "juana@example.com"
+        );
 
-    LocalDate fecha = LocalDate.now().plusDays(1);
-    LocalTime hora = LocalTime.of(19, 0);
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
 
-    // 2. Comprobar que se rechaza la reserva
-    assertThrows(ReservaException.class, () -> {
-        servicio.crearReserva(cliente, 4, 0, fecha, hora);
-    });
+        // 2. Comprobar que se rechaza la reserva
+        assertThrows(ReservaException.class, () -> {
+            servicio.crearReserva(cliente, 4, 0, fecha, hora);
+        });
 
-    // 3. Comprobar que no se guardó
-    assertEquals(0, repositorio.obtenerTodas().size());
-}
-
-
+        // 3. Comprobar que no se guardó
+        assertEquals(0, repositorio.obtenerTodas().size());
+    }
 
 
-//Comprobar que llegar exactamente a 120 personas está permitido
+    //Comprobar que llegar exactamente a 120 personas está permitido
     @Test
     void sePuedeCrearUnaReservaQueCompleteElAforoDe120Personas()
             throws ReservaException {
@@ -381,9 +379,7 @@ void noSePuedeCrearUnaReservaSinMovil() {
     }
 
 
-
-
-//Compruebo  que el servicio revisa también lo que ocurrirá más tarde durante la estancia.
+    //Compruebo  que el servicio revisa también lo que ocurrirá más tarde durante la estancia.
     @Test
     void noSePuedeReservarSiElAforoSeSuperaMasTarde() {
 
@@ -435,8 +431,7 @@ void noSePuedeCrearUnaReservaSinMovil() {
     }
 
 
-
-//Probaremos que cancelarReserva() cambia el estado y libera las tronas.
+    //Probaremos que cancelarReserva() cambia el estado y libera las tronas.
     @Test
     void cancelarUnaReservaCambiaSuEstadoYLiberaSusTronas()
             throws ReservaException {
@@ -479,8 +474,7 @@ void noSePuedeCrearUnaReservaSinMovil() {
     }
 
 
-
-//Comprobamos que otro cliente no pueda cancelarla
+    //Comprobamos que otro cliente no pueda cancelarla
     @Test
     void noSePuedeCancelarUnaReservaDeOtroCliente()
             throws ReservaException {
@@ -516,7 +510,6 @@ void noSePuedeCrearUnaReservaSinMovil() {
                 17, servicio.calcularTronasDisponibles(fecha, hora)
         );
     }
-
 
 
     //Comprobamos que no se pueda cancelar una reserva que ya empezo
@@ -555,8 +548,7 @@ void noSePuedeCrearUnaReservaSinMovil() {
     }
 
 
-
-//Comprobamos que una reserva cancelada no se pueda cancelar otra vez
+    //Comprobamos que una reserva cancelada no se pueda cancelar otra vez
     @Test
     void noSePuedeCancelarDosVecesLaMismaReserva()
             throws ReservaException {
@@ -598,7 +590,6 @@ void noSePuedeCrearUnaReservaSinMovil() {
     }
 
 
-
     //Intentar cancelar una reserva que no existe.
 
     @Test
@@ -622,7 +613,6 @@ void noSePuedeCrearUnaReservaSinMovil() {
 
         assertEquals(0, repositorio.obtenerTodas().size());
     }
-
 
 
     // Comprueba que la reserva cambia de 4 personas y 1 trona a
@@ -664,7 +654,6 @@ void noSePuedeCrearUnaReservaSinMovil() {
         assertEquals(1, repositorio.obtenerTodas().size());
         assertEquals(18, servicio.calcularTronasDisponibles(fecha, hora));
     }
-
 
 
     // Comprueba si el cambio supera el aforo de 120 personas,
@@ -722,4 +711,112 @@ void noSePuedeCrearUnaReservaSinMovil() {
         assertEquals(EstadoReserva.ACTIVA, guardada.getEstado());
         assertEquals(11, repositorio.obtenerTodas().size());
     }
+
+
+    // Comprueba que cambiar fecha y hora libera las tronas
+// del horario anterior y las ocupa en el nuevo.
+    @Test
+    void modificarFechaYHoraLiberaElHorarioAnterior()
+            throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María", "García",
+                "600000001", "maria@example.com"
+        );
+
+        LocalDate fechaOriginal = LocalDate.now().plusDays(1);
+        LocalTime horaOriginal = LocalTime.of(19, 0);
+
+        Reserva reserva = servicio.crearReserva(
+                cliente, 4, 2, fechaOriginal, horaOriginal
+        );
+
+        LocalDate nuevaFecha = fechaOriginal.plusDays(1);
+        LocalTime nuevaHora = LocalTime.of(20, 0);
+
+        // Cambiar la fecha y la hora
+        servicio.modificarReserva(
+                reserva.getId(), cliente.getMovil(),
+                4, 2, nuevaFecha, nuevaHora
+        );
+
+        Reserva guardada = repositorio.buscarPorId(reserva.getId());
+
+        assertEquals(nuevaFecha, guardada.getFecha());
+        assertEquals(nuevaHora, guardada.getHora());
+
+        // En el horario anterior vuelven a quedar las 20 tronas
+        assertEquals(20, servicio.calcularTronasDisponibles(
+                fechaOriginal, horaOriginal
+        ));
+
+        // En el nuevo quedan 18 porque María utiliza 2
+        assertEquals(18, servicio.calcularTronasDisponibles(
+                nuevaFecha, nuevaHora
+        ));
+
+        assertEquals(1, repositorio.obtenerTodas().size());
+    }
+
+
+    // Comprueba que mover una reserva libera sus plazas
+// para que otro grupo pueda reservar en el horario anterior.
+    @Test
+    void cambiarDeHorarioLiberaPlazasParaOtroGrupo()
+            throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime horaOriginal = LocalTime.of(19, 0);
+
+        // Otros grupos ocupan 108 plazas
+        for (int i = 1; i <= 9; i++) {
+            Cliente cliente = new Cliente(
+                    "Cliente", "Prueba",
+                    "60000000" + i,
+                    "cliente" + i + "@example.com"
+            );
+
+            repositorio.guardar(
+                    new Reserva(cliente, 12, fecha, horaOriginal)
+            );
+        }
+
+        Cliente maria = new Cliente(
+                "María", "García",
+                "600000050", "maria@example.com"
+        );
+
+        // Con María, el aforo queda completo: 108 + 12 = 120
+        Reserva reserva = servicio.crearReserva(
+                maria, 12, 0, fecha, horaOriginal
+        );
+
+        // María traslada su reserva a las 21:00
+        servicio.modificarReserva(
+                reserva.getId(), maria.getMovil(),
+                12, 0, fecha, LocalTime.of(21, 0)
+        );
+
+        Cliente luis = new Cliente(
+                "Luis", "Pérez",
+                "600000099", "luis@example.com"
+        );
+
+        // Luis debe poder utilizar las 12 plazas liberadas
+        Reserva nueva = servicio.crearReserva(
+                luis, 12, 0, fecha, horaOriginal
+        );
+
+        assertEquals(12, nueva.getPersonas());
+        assertEquals(horaOriginal, nueva.getHora());
+        assertEquals(LocalTime.of(21, 0), reserva.getHora());
+        assertEquals(11, repositorio.obtenerTodas().size());
+    }
+
 }

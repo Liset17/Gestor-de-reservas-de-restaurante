@@ -396,7 +396,6 @@ public class ReservaService {
 
 
         // 13-. Regla H: crear / modificar / cancelar
-
     public void cancelarReserva(int id, String movil)
             throws ReservaException {
 
@@ -425,54 +424,45 @@ public class ReservaService {
     }
 
 
-    public Reserva modificarReserva(int id, String movil, int personas,
-            int tronasSolicitadas, LocalDate fecha,LocalTime hora)
-            throws ReservaException {
-
-        Reserva reserva = buscarReservaExistente(id);
-
-        // Comprobar que pertenece al cliente
-        if (!reserva.getCliente().getMovil().equals(movil)) {
-            throw new ReservaException(
-                    "No puedes modificar una reserva de otro cliente."
-            );
-        }
-
-        // Solo se modifican reservas activas que aún no han empezado
-        if (reserva.getEstado() != EstadoReserva.ACTIVA) {
-            throw new ReservaException(
-                    "Solo puedes modificar una reserva activa."
-            );
-        }
-
-        validarFechaHora(reserva.getFecha(), reserva.getHora());
-
-        // Comprobar los datos nuevos sin cambiar los originales
-        Cliente cliente = reserva.getCliente();
-
-        validarDatosObligatorios(cliente, fecha, hora);
-        validarPersonas(personas);
-        validarHora(hora);
-        validarFechaHora(fecha, hora);
-
-        validarSolapamientoCliente(cliente, fecha, hora, id);
-        validarAforo(fecha, hora, personas, id);
-        validarTronas(personas, tronasSolicitadas, fecha, hora, id);
-
-        // Todas las comprobaciones han pasado: aplicar los cambios
-        reserva.setPersonas(personas);
-        reserva.setTronas(tronasSolicitadas);
-        reserva.setFecha(fecha);
-        reserva.setHora(hora);
-
-        return reserva;
-
-
-
-
-    }
         // 14-. Regla I: finalizada automática al terminar las 2 h de reserva
+        public Reserva modificarReserva(int id, String movil, int personas,
+       int tronasSolicitadas, LocalDate fecha, LocalTime hora)
+                throws ReservaException {
 
+            Reserva reserva = buscarReservaExistente(id);
+
+            if (!reserva.getCliente().getMovil().equals(movil)) {
+                throw new ReservaException(
+                        "No puedes modificar una reserva de otro cliente."
+                );
+            }
+
+            if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+                throw new ReservaException(
+                        "Solo puedes modificar una reserva activa."
+                );
+            }
+
+            validarFechaHora(reserva.getFecha(), reserva.getHora());
+
+            Cliente cliente = reserva.getCliente();
+
+            validarDatosObligatorios(cliente, fecha, hora);
+            validarPersonas(personas);
+            validarHora(hora);
+            validarFechaHora(fecha, hora);
+
+            validarSolapamientoCliente(cliente, fecha, hora, id);
+            validarAforo(fecha, hora, personas, id);
+            validarTronas(personas, tronasSolicitadas, fecha, hora, id);
+
+            reserva.setPersonas(personas);
+            reserva.setTronas(tronasSolicitadas);
+            reserva.setFecha(fecha);
+            reserva.setHora(hora);
+
+            return reserva;
+        }
 
         // 15-. Regla J: código de verificación (SIMULADO)
 
