@@ -819,4 +819,81 @@ class ReservaServiceTest {
         assertEquals(11, repositorio.obtenerTodas().size());
     }
 
+
+    // Se comprueba que ampliar una reserva hasta completar el aforo
+// no cuenta también las personas de la reserva original
+    @Test
+    void ampliarReservaHasta120NoCuentaDosVecesSusPersonas()
+            throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        // Creamos los primeros nueve grupos de 12 personas: 108 plazas
+        for (int i = 1; i <= 9; i++) {
+            Cliente cliente = new Cliente(
+
+                    // Construye un dato distinto en cada vuelta.
+                    "Cliente", "Prueba",
+                    "60000000" + i,
+                    "cliente" + i + "@example.com"
+            );
+
+            //crea una reserva para ese cliente, 12 personas, mañana a las 19:00
+            repositorio.guardar(
+                    new Reserva(cliente, 12, fecha, hora)
+            );
+        }
+
+        // Se añade a Luis para llegar a 114
+        Cliente luis = new Cliente(
+                "Luis", "Pérez",
+                "600000050", "luis@example.com"
+        );
+        repositorio.guardar(new Reserva(luis, 6, fecha, hora));
+
+
+//Creamos la reserva de María quien va a experimentar el limite
+        Cliente maria = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        // Antes del cambio: 114 + 4 de maria = 118
+        Reserva reservaMaria = servicio.crearReserva(
+                maria, 4, 0, fecha, hora
+        );
+
+        // Solicitamos la ampliacion, después del cambio debe haber 114 + 6 = 120
+        servicio.modificarReserva(
+                reservaMaria.getId(), maria.getMovil(),
+                6, 0, fecha, hora
+        );
+
+        //Se consulta el resultado guardado
+        Reserva guardada = repositorio.buscarPorId(reservaMaria.getId());
+
+        //JUnit comprueba que Maria tenga ahora 6 personas.
+        assertEquals(6, guardada.getPersonas());
+        //que siga activa
+        assertEquals(EstadoReserva.ACTIVA, guardada.getEstado());
+        //Comprueba que haya 11 reservas, 9 grupos + Luis + María = 11
+        assertEquals(11, repositorio.obtenerTodas().size());
+
+        int totalPersonas = 0;
+        //Recorremos las reservas guardadas. En cada vuelta, la variable reserva representa una de ellas
+        for (Reserva reserva : repositorio.obtenerTodas()) {
+            totalPersonas += reserva.getPersonas();
+        }
+
+        //JUnit comprueba que la suma final sea 120. En este parte todas las
+        // reservas están activas y tienen el mismo horario, por eso sumarlas comprueba
+        // la ocupación simultanea.
+        assertEquals(120, totalPersonas);
+    }
+
+
 }
