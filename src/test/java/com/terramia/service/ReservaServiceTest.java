@@ -984,4 +984,23 @@ class ReservaServiceTest {
         assertFalse(verificado);
     }
 
+    // Se comprueba que un código aceptado no puede reutilizarse.
+    @Test
+    void noSePuedeReutilizarUnCodigoAceptado() throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        String movil = "600000099";
+        String codigo = servicio.generarCodigoVerificacion(movil);
+
+        // El primer uso debe aceptarse
+        boolean primerIntento = servicio.verificarCodigo(movil, codigo);
+        assertTrue(primerIntento);
+
+        // El mismo código ya no debe aceptarse
+        boolean segundoIntento = servicio.verificarCodigo(movil, codigo);
+        assertFalse(segundoIntento);
+    }
+
 }
