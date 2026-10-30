@@ -1,9 +1,14 @@
 package com.terramia.service;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+
 import com.terramia.model.Cliente;
 import com.terramia.model.EstadoReserva;
 import com.terramia.model.Reserva;
 import com.terramia.repository.ReservaRepository;
+
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,6 +18,13 @@ public class ReservaService {
 
     // 1-. Repositorio para guardar y buscar reservas
     private final ReservaRepository reservaRepository;
+
+    // Guarda el código correspondiente a cada móvil
+    private final Map<String, String> codigosVerificacion = new HashMap<>();
+
+    // Genera números aleatorios para la simulación
+    private final Random random = new Random();
+
 
     // 2-. Constantes de las reglas del restaurante
     // a-. Aforo máximo de personas por tramo
@@ -489,7 +501,23 @@ public class ReservaService {
 
 
     // 15-. Regla J: código de verificación (SIMULADO)
+    public String generarCodigoVerificacion(String movil)
+            throws ReservaException {
 
+        if (movil == null || movil.isBlank()) {
+            throw new ReservaException(
+                    "Debes indicar un número móvil."
+            );
+        }
+
+        String codigo = String.format(
+                "%06d", random.nextInt(1_000_000)
+        );
+
+        codigosVerificacion.put(movil, codigo);
+
+        return codigo;
+    }
 
     // 16-. Crear una reserva aplicando todas las reglas
     //Las validaciones son métodos privados y el metodo
@@ -512,5 +540,5 @@ public class ReservaService {
         return reserva;
     }
 
-}
 
+}
