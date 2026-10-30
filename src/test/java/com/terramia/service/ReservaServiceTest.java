@@ -6,7 +6,9 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.terramia.model.Cliente;
 import com.terramia.model.Reserva;
@@ -896,7 +898,7 @@ class ReservaServiceTest {
     }
 
 
-// Comprobar que ampliar hasta 20 tronas no cuenta
+    // Comprobar que ampliar hasta 20 tronas no cuenta
 // la trona anterior de María.
     @Test
     void ampliarHasta20TronasNoCuentaDosVecesLasAnteriores()
@@ -943,5 +945,43 @@ class ReservaServiceTest {
         assertEquals(3, repositorio.obtenerTodas().size());
     }
 
+
+    // Compruebo que se acepta el código generado para ese móvil.
+    @Test
+    void seAceptaElCodigoCorrecto() throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        String movil = "600000099";
+        String codigo = servicio.generarCodigoVerificacion(movil);
+
+        boolean verificado = servicio.verificarCodigo(movil, codigo);
+
+        assertTrue(verificado);
+    }
+
+
+    // Comprueba que se rechaza un código distinto del generado.
+    @Test
+    void seRechazaUnCodigoIncorrecto() throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        String movil = "600000099";
+        String codigoCorrecto = servicio.generarCodigoVerificacion(movil);
+
+        // Elegimos un código que sea diferente del correcto
+        String codigoIncorrecto = "000000";
+
+        if (codigoCorrecto.equals(codigoIncorrecto)) {
+            codigoIncorrecto = "000001";
+        }
+
+        boolean verificado = servicio.verificarCodigo(movil, codigoIncorrecto);
+
+        assertFalse(verificado);
+    }
 
 }

@@ -522,6 +522,9 @@ public class ReservaService {
     // 16-. Crear una reserva aplicando todas las reglas
     //Las validaciones son métodos privados y el metodo
     // publico crearReserva las orquesta antes de crear y guardar la reserva
+
+
+
     public Reserva crearReserva(Cliente cliente, int personas, int tronasSolicitadas, LocalDate fecha, LocalTime
             hora)
             throws ReservaException {
@@ -540,5 +543,26 @@ public class ReservaService {
         return reserva;
     }
 
+
+    //simulación de verficacion de movil
+    public boolean verificarCodigo(String movil, String codigoIntroducido) {
+
+        String codigoGuardado = codigosVerificacion.get(movil);
+
+        // No se ha generado un código para este móvil
+        if (codigoGuardado == null) {
+            return false;
+        }
+
+        // El código introducido no coincide
+        if (!codigoGuardado.equals(codigoIntroducido)) {
+            return false;
+        }
+
+        // Si es correcto, lo eliminamos para que se use una sola vez
+        codigosVerificacion.remove(movil);
+
+        return true;
+    }
 
 }
