@@ -31,7 +31,7 @@ public class ReservaService {
 
     // 4-. Regla 0: los datos obligatorios no deben estar vacíos
     private void validarDatosObligatorios(Cliente cliente, LocalDate fecha,
-    LocalTime hora) throws ReservaException {
+                                          LocalTime hora) throws ReservaException {
 
         // a-. El cliente es obligatorio
         if (cliente == null) {
@@ -187,12 +187,12 @@ public class ReservaService {
     }
 
     // Al modificar, podemos excluir la reserva original del cálculo
-    private void validarAforo(LocalDate fecha, LocalTime hora,int personas, Integer idReservaExcluir)
+    private void validarAforo(LocalDate fecha, LocalTime hora, int personas, Integer idReservaExcluir)
             throws ReservaException {
 
         LocalDateTime inicioNuevo = LocalDateTime.of(fecha, hora);
 
-        for ( int minutos = 0;
+        for (int minutos = 0;
              minutos < DURACION_HORAS * 60;
              minutos += 30) {
             LocalDateTime momento = inicioNuevo.plusMinutes(minutos);
@@ -238,12 +238,11 @@ public class ReservaService {
     }
 
 
-
-        // 10-. Regla E: tronas, máx. 20 en el tramo de 2 h (si no quedan, se puede reservar sin trona).
-        // 10.1-. Calcula las tronas libres en el tramo de 2 h
-        public int calcularTronasDisponibles(LocalDate fecha, LocalTime hora) {
-            return calcularTronasDisponibles(fecha, hora, null);
-        }
+    // 10-. Regla E: tronas, máx. 20 en el tramo de 2 h (si no quedan, se puede reservar sin trona).
+    // 10.1-. Calcula las tronas libres en el tramo de 2 h
+    public int calcularTronasDisponibles(LocalDate fecha, LocalTime hora) {
+        return calcularTronasDisponibles(fecha, hora, null);
+    }
 
     // Consulta que permite excluir la reserva que se modifica
     private int calcularTronasDisponibles(
@@ -294,8 +293,8 @@ public class ReservaService {
     }
 
     // 10.2-. Validar las tronas solicitadas
-    private void validarTronas(int personas, int tronasSolicitadas,LocalDate fecha,
-            LocalTime hora) throws ReservaException {
+    private void validarTronas(int personas, int tronasSolicitadas, LocalDate fecha,
+                               LocalTime hora) throws ReservaException {
 
         validarTronas(personas, tronasSolicitadas, fecha, hora, null);
     }
@@ -333,12 +332,12 @@ public class ReservaService {
     }
 
 
-        // 11-. Regla F: solapamiento, un cliente no puede tener dos reservas a la vez
-        private void validarSolapamientoCliente (Cliente cliente, LocalDate fecha, LocalTime hora)
+    // 11-. Regla F: solapamiento, un cliente no puede tener dos reservas a la vez
+    private void validarSolapamientoCliente(Cliente cliente, LocalDate fecha, LocalTime hora)
             throws ReservaException {
 
-            validarSolapamientoCliente(cliente, fecha, hora, null);
-        }
+        validarSolapamientoCliente(cliente, fecha, hora, null);
+    }
 
     // Permite excluir la reserva que estamos modificando
     private void validarSolapamientoCliente(
@@ -370,32 +369,31 @@ public class ReservaService {
                 );
             }
         }
-     }
+    }
 
 
+    // 12-. Regla G: aviso si el cliente ya tiene una reserva ese mismo día
+    public boolean tieneReservaElMismoDia(String movil, LocalDate fecha) {
 
-        // 12-. Regla G: aviso si el cliente ya tiene una reserva ese mismo día
-        public boolean tieneReservaElMismoDia (String movil, LocalDate fecha){
+        // a-. Recorremos las reservas de este cliente
+        for (Reserva reserva : reservaRepository.buscarPorMovil(movil)) {
 
-            // a-. Recorremos las reservas de este cliente
-            for (Reserva reserva : reservaRepository.buscarPorMovil(movil)) {
-
-                // b-. Solo cuentan las reservas activas
-                if (reserva.getEstado() != EstadoReserva.ACTIVA) {
-                    continue;
-                }
-
-                // c-. Si la fecha coincide, ya tiene reserva ese día
-                if (reserva.getFecha().equals(fecha)) {
-                    return true;
-                }
+            // b-. Solo cuentan las reservas activas
+            if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+                continue;
             }
-            //d-. Si recorremos todas y ninguna coincide
-            return false;
+
+            // c-. Si la fecha coincide, ya tiene reserva ese día
+            if (reserva.getFecha().equals(fecha)) {
+                return true;
+            }
         }
+        //d-. Si recorremos todas y ninguna coincide
+        return false;
+    }
 
 
-        // 13-. Regla H: crear / modificar / cancelar
+    // 13-. Regla H: crear / modificar / cancelar
     public void cancelarReserva(int id, String movil)
             throws ReservaException {
 
@@ -423,70 +421,96 @@ public class ReservaService {
         reserva.setEstado(EstadoReserva.CANCELADA);
     }
 
-
-        // 14-. Regla I: finalizada automática al terminar las 2 h de reserva
-        public Reserva modificarReserva(int id, String movil, int personas,
-       int tronasSolicitadas, LocalDate fecha, LocalTime hora)
-                throws ReservaException {
-
-            Reserva reserva = buscarReservaExistente(id);
-
-            if (!reserva.getCliente().getMovil().equals(movil)) {
-                throw new ReservaException(
-                        "No puedes modificar una reserva de otro cliente."
-                );
-            }
-
-            if (reserva.getEstado() != EstadoReserva.ACTIVA) {
-                throw new ReservaException(
-                        "Solo puedes modificar una reserva activa."
-                );
-            }
-
-            validarFechaHora(reserva.getFecha(), reserva.getHora());
-
-            Cliente cliente = reserva.getCliente();
-
-            validarDatosObligatorios(cliente, fecha, hora);
-            validarPersonas(personas);
-            validarHora(hora);
-            validarFechaHora(fecha, hora);
-
-            validarSolapamientoCliente(cliente, fecha, hora, id);
-            validarAforo(fecha, hora, personas, id);
-            validarTronas(personas, tronasSolicitadas, fecha, hora, id);
-
-            reserva.setPersonas(personas);
-            reserva.setTronas(tronasSolicitadas);
-            reserva.setFecha(fecha);
-            reserva.setHora(hora);
-
-            return reserva;
-        }
-
-        // 15-. Regla J: código de verificación (SIMULADO)
-
-
-        // 16-. Crear una reserva aplicando todas las reglas
-        //Las validaciones son métodos privados y el metodo
-        // publico crearReserva las orquesta antes de crear y guardar la reserva
-        public Reserva crearReserva (Cliente cliente,int personas, int tronasSolicitadas, LocalDate fecha, LocalTime
-        hora)
+    public Reserva modificarReserva(int id, String movil, int personas,
+                                    int tronasSolicitadas, LocalDate fecha, LocalTime hora)
             throws ReservaException {
 
-            validarDatosObligatorios(cliente, fecha, hora);
-            validarPersonas(personas);
-            validarHora(hora);
-            validarFechaHora(fecha, hora);
-            validarSolapamientoCliente(cliente, fecha, hora);
-            validarAforo(fecha, hora, personas);
-            validarTronas(personas, tronasSolicitadas, fecha, hora);
+        Reserva reserva = buscarReservaExistente(id);
 
-            Reserva reserva = new Reserva(cliente, personas, fecha, hora);
-            reserva.setTronas(tronasSolicitadas);
-            reservaRepository.guardar(reserva);
-            return reserva;
+        if (!reserva.getCliente().getMovil().equals(movil)) {
+            throw new ReservaException(
+                    "No puedes modificar una reserva de otro cliente."
+            );
         }
 
+        if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+            throw new ReservaException(
+                    "Solo puedes modificar una reserva activa."
+            );
+        }
+
+
+        validarFechaHora(reserva.getFecha(), reserva.getHora());
+
+        Cliente cliente = reserva.getCliente();
+
+        validarDatosObligatorios(cliente, fecha, hora);
+        validarPersonas(personas);
+        validarHora(hora);
+        validarFechaHora(fecha, hora);
+
+        validarSolapamientoCliente(cliente, fecha, hora, id);
+        validarAforo(fecha, hora, personas, id);
+        validarTronas(personas, tronasSolicitadas, fecha, hora, id);
+
+        reserva.setPersonas(personas);
+        reserva.setTronas(tronasSolicitadas);
+        reserva.setFecha(fecha);
+        reserva.setHora(hora);
+
+        return reserva;
     }
+
+
+    // 14-. Regla I: finalizada automática al terminar las 2 h de reserva
+    public void actualizarReservasFinalizadas() {
+
+        // Obtener el momento actual una sola vez
+        LocalDateTime ahora = LocalDateTime.now();
+
+        for (Reserva reserva : reservaRepository.obtenerTodas()) {
+
+            // Las canceladas o finalizadas se mantienen como están
+            if (reserva.getEstado() != EstadoReserva.ACTIVA) {
+                continue;
+            }
+
+            LocalDateTime inicio =
+                    LocalDateTime.of(reserva.getFecha(), reserva.getHora());
+
+            LocalDateTime fin = inicio.plusHours(DURACION_HORAS);
+
+            // Finalizar si ya llegó o pasó su hora de fin
+            if (!ahora.isBefore(fin)) {
+                reserva.setEstado(EstadoReserva.FINALIZADA);
+            }
+        }
+    }
+
+
+    // 15-. Regla J: código de verificación (SIMULADO)
+
+
+    // 16-. Crear una reserva aplicando todas las reglas
+    //Las validaciones son métodos privados y el metodo
+    // publico crearReserva las orquesta antes de crear y guardar la reserva
+    public Reserva crearReserva(Cliente cliente, int personas, int tronasSolicitadas, LocalDate fecha, LocalTime
+            hora)
+            throws ReservaException {
+
+        validarDatosObligatorios(cliente, fecha, hora);
+        validarPersonas(personas);
+        validarHora(hora);
+        validarFechaHora(fecha, hora);
+        validarSolapamientoCliente(cliente, fecha, hora);
+        validarAforo(fecha, hora, personas);
+        validarTronas(personas, tronasSolicitadas, fecha, hora);
+
+        Reserva reserva = new Reserva(cliente, personas, fecha, hora);
+        reserva.setTronas(tronasSolicitadas);
+        reservaRepository.guardar(reserva);
+        return reserva;
+    }
+
+}
 

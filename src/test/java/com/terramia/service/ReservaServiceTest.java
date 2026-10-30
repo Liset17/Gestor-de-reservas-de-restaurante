@@ -896,4 +896,52 @@ class ReservaServiceTest {
     }
 
 
+// Comprobar que ampliar hasta 20 tronas no cuenta
+// la trona anterior de María.
+    @Test
+    void ampliarHasta20TronasNoCuentaDosVecesLasAnteriores()
+            throws ReservaException {
+
+//Creamos el repositorio y el servicio
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        // Se crea dos reservas de 9 tronas: 18 ocupadas, repite su contenido dos veces i genera datos distintos
+        for (int i = 1; i <= 2; i++) {
+            Cliente cliente = new Cliente(
+                    "Cliente", "Prueba",
+                    "60000000" + i,
+                    "cliente" + i + "@example.com"
+            );
+
+            servicio.crearReserva(cliente, 9, 9, fecha, hora);
+        }
+
+        Cliente maria = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        //Creo al cliente María
+        Reserva reservaMaria = servicio.crearReserva(
+                maria, 4, 1, fecha, hora
+        );
+
+        // Cambiar de 1 a 2 tronas
+        servicio.modificarReserva(
+                reservaMaria.getId(), maria.getMovil(),
+                4, 2, fecha, hora
+        );
+
+        Reserva guardada = repositorio.buscarPorId(reservaMaria.getId());
+
+        assertEquals(2, guardada.getTronas());
+        assertEquals(0, servicio.calcularTronasDisponibles(fecha, hora));
+        assertEquals(3, repositorio.obtenerTodas().size());
+    }
+
+
 }
