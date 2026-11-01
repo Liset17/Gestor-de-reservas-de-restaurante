@@ -50,4 +50,21 @@ class ContactoServiceTest {
         assertEquals(0, repositorio.obtenerTodos().size());
     }
 
+    // Comprueba que un mensaje sin correo se rechaza y no se guarda.
+    @Test
+    void noSeGuardaUnMensajeSinCorreo() {
+
+        MensajeRepository repositorio = new MensajeRepository();
+        ContactoService servicio = new ContactoService(repositorio);
+
+        assertThrows(ReservaException.class,
+                () -> servicio.guardarMensaje(
+                        "María",
+                        "",
+                        "Quiero información para un grupo."
+                ));
+
+        assertEquals(0, repositorio.obtenerTodos().size());
+    }
+
 }
