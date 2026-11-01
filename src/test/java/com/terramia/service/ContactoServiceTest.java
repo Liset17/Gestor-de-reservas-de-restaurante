@@ -67,4 +67,22 @@ class ContactoServiceTest {
         assertEquals(0, repositorio.obtenerTodos().size());
     }
 
+
+
+    // Comprueba que el texto del mensaje sea obligatorio.
+    @Test
+    void noSeGuardaUnMensajeVacio() {
+
+        MensajeRepository repositorio = new MensajeRepository();
+        ContactoService servicio = new ContactoService(repositorio);
+
+        assertThrows(ReservaException.class,
+                () -> servicio.guardarMensaje(
+                        "María",
+                        "maria@example.com",
+                        ""
+                ));
+
+        assertEquals(0, repositorio.obtenerTodos().size());
+    }
 }
