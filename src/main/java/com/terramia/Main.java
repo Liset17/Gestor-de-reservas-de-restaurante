@@ -2,6 +2,7 @@ package com.terramia;
 
 import java.util.Scanner;
 
+import com.terramia.model.Cliente;
 import com.terramia.repository.ReservaRepository;
 import com.terramia.repository.MensajeRepository;
 import com.terramia.service.ReservaService;
@@ -39,7 +40,8 @@ public class Main {
             // Ejecutar el bloque correspondiente a la opción elegida por el usuario
             switch (opcion) {
                 case "1":
-                    System.out.println("Has elegido Reservar.");
+                    Cliente cliente = leerCliente(scanner);
+                    System.out.println("Datos recogidos para " + cliente.getNombre() + ".");
                     break;
 
                 case "2":
@@ -63,5 +65,23 @@ public class Main {
         } while (!opcion.equals("0"));
 
         scanner.close();
+    }
+
+    // Recoge los datos del cliente para preparar su reserva.
+    private static Cliente leerCliente(Scanner scanner) {
+
+        System.out.print("Nombre: ");
+        String nombre = scanner.nextLine();
+
+        System.out.print("Apellidos: ");
+        String apellidos = scanner.nextLine();
+
+        System.out.print("Móvil: ");
+        String movil = scanner.nextLine();
+
+        System.out.print("Correo electrónico: ");
+        String correo = scanner.nextLine();
+
+        return new Cliente(nombre, apellidos, movil, correo);
     }
 }
