@@ -3,6 +3,8 @@ package com.terramia.service;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.terramia.model.Cliente;
 import com.terramia.model.EstadoReserva;
@@ -247,6 +249,47 @@ public class ReservaService {
                 );
             }
         }
+    }
+
+
+    // Devuelve los horarios donde cabe el grupo durante sus dos horas.
+    public List<LocalTime> consultarHorasDisponibles(
+            LocalDate fecha, int personas) throws ReservaException {
+
+        if (fecha == null) {
+            throw new ReservaException(
+                    "Debes indicar una fecha para la reserva."
+            );
+        }
+
+        validarPersonas(personas);
+
+        List<LocalTime> horasDisponibles = new ArrayList<>();
+
+        LocalDateTime primeraHora =
+                LocalDateTime.of(fecha, LocalTime.of(11, 30));
+
+        LocalDateTime ultimaHora =
+                LocalDateTime.of(fecha, LocalTime.of(23, 30));
+
+        for (LocalDateTime momento = primeraHora;
+             !momento.isAfter(ultimaHora);
+             momento = momento.plusMinutes(30)) {
+
+            LocalTime hora = momento.toLocalTime();
+
+            try {
+                validarFechaHora(fecha, hora);
+                validarAforo(fecha, hora, personas);
+
+                horasDisponibles.add(hora);
+
+            } catch (ReservaException e) {
+                // No añadimos horas pasadas o sin aforo suficiente.
+            }
+        }
+
+        return horasDisponibles;
     }
 
 
@@ -522,7 +565,6 @@ public class ReservaService {
     // 16-. Crear una reserva aplicando todas las reglas
     //Las validaciones son métodos privados y el metodo
     // publico crearReserva las orquesta antes de crear y guardar la reserva
-
 
 
     public Reserva crearReserva(Cliente cliente, int personas, int tronasSolicitadas, LocalDate fecha, LocalTime

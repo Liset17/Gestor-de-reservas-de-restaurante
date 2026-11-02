@@ -1,6 +1,9 @@
 package com.terramia;
 
 import java.util.Scanner;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 
 import com.terramia.model.Cliente;
 import com.terramia.repository.ReservaRepository;
@@ -40,9 +43,39 @@ public class Main {
             // Ejecutar el bloque correspondiente a la opción elegida por el usuario
             switch (opcion) {
                 case "1":
+                try {
                     Cliente cliente = leerCliente(scanner);
-                    System.out.println("Datos recogidos para " + cliente.getNombre() + ".");
-                    break;
+
+                    System.out.print("Número de personas: ");
+                    int personas = Integer.parseInt(scanner.nextLine().trim());
+
+                    System.out.print("Fecha (año-mes-día, por ejemplo 2030-06-15): ");
+                    LocalDate fecha = LocalDate.parse(scanner.nextLine().trim());
+
+                    System.out.print("Hora (por ejemplo 19:00): ");
+                    LocalTime hora = LocalTime.parse(scanner.nextLine().trim());
+
+                    System.out.print("Número de tronas (0 si no necesitas): ");
+                    int tronas = Integer.parseInt(scanner.nextLine().trim());
+
+                    // Mostrar lo recogido; todavía no se guarda una reserva
+                    System.out.println();
+                    System.out.println("=== Datos de la solicitud ===");
+                    System.out.println("Cliente: " + cliente.getNombre());
+                    System.out.println("Personas: " + personas);
+                    System.out.println("Fecha: " + fecha);
+                    System.out.println("Hora: " + hora);
+                    System.out.println("Tronas: " + tronas);
+                    System.out.println("La reserva todavía no se ha guardado.");
+
+                } catch (NumberFormatException | DateTimeParseException e) {
+                    System.out.println(
+                            "No se pudieron leer los datos. "
+                                    + "Introduce cantidades enteras, fecha año-mes-día "
+                                    + "y hora como 19:00."
+                    );
+                }
+                break;
 
                 case "2":
                     System.out.println("Has elegido Mis reservas.");
