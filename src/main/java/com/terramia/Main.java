@@ -45,7 +45,7 @@ public class Main {
                     break;
 
                 case "2":
-                    System.out.println("Has elegido Mis reservas.");
+                    misReservas(scanner, reservaService);
                     break;
 
                 case "3":
@@ -331,5 +331,258 @@ public class Main {
 
             System.out.println("Escribe s para sí o n para no.");
         }
+    }
+
+    // Verifica el acceso y gestionar las reservas de ese móvil. después de verificar el código permite gestionar
+    // únicamente las reservas del móvil introducido. Al modificar, recoge una propuesta sin cambiar la original
+    // al confirmar, el servicio valida y actualiza. Al cancelar, también pide confirmación.
+    private static void misReservas(
+            Scanner scanner, ReservaService reservaService) {
+
+        try {
+            String movil = leerTextoObligatorio(scanner, "Móvil: ");
+            String codigo = reservaService.generarCodigoVerificacion(movil);
+
+            // Solo para esta versión: simular la recepción del código
+            System.out.println("SIMULACIÓN. Tu código es: " + codigo);
+
+            String codigoIntroducido = leerTextoObligatorio(
+                    scanner, "Introduce el código de verificación: "
+            );
+
+            if (!reservaService.verificarCodigo(movil, codigoIntroducido)) {
+                System.out.println(
+                        "Código incorrecto. No se ha permitido el acceso."
+                );
+                return;
+            }
+
+            // Permitir varias operaciones durante este acceso verificado
+            while (true) {
+                reservaService.actualizarReservasFinalizadas();
+
+                List<Reserva> reservas =
+                        reservaService.consultarReservas(movil);
+
+                if (reservas.isEmpty()) {
+                    System.out.println("No tienes reservas guardadas.");
+                    return;
+                }
+
+                System.out.println();
+                System.out.println("=== Mis reservas ===");
+
+                for (Reserva reserva : reservas) {
+                    System.out.println(
+                            "ID: " + reserva.getId()
+                                    + " | Fecha: " + reserva.getFecha()
+                                    + " | Hora: " + reserva.getHora()
+                                    + " | Personas: " + reserva.getPersonas()
+                                    + " | Tronas: " + reserva.getTronas()
+                                    + " | Estado: " + reserva.getEstado()
+                    );
+                }
+
+                int id = leerEntero(
+                        scanner,
+                        "ID de la reserva que quieres gestionar "
+                                + "(0 para volver al menú): ",
+                        0,
+                        Integer.MAX_VALUE
+                );
+
+                if (id == 0) {
+                    return;
+                }
+
+                // Buscar únicamente entre las reservas de este cliente
+                Reserva seleccionada = null;
+
+                for (Reserva reserva : reservas) {
+                    if (reserva.getId() == id) {
+                        seleccionada = reserva;
+                        break;
+                    }
+                }
+
+                if (seleccionada == null) {
+                    System.out.println(
+                            "Ese ID no pertenece a tus reservas."
+                    );
+                    continue;
+                }
+
+                System.out.println("1. Modificar");
+                System.out.println("2. Cancelar");
+                System.out.println("0. Volver a la lista");
+
+                int accion = leerEntero(
+                        scanner, "Elige una opción: ", 0, 2
+                );
+
+                if (accion == 1) {
+                    modificarDesdeConsola(
+                            scanner, reservaService, seleccionada, movil
+                    );
+                } else if (accion == 2) {
+                    cancelarDesdeConsola(
+                            scanner, reservaService, seleccionada, movil
+                    );
+                }
+            }
+
+        } catch (ReservaException e) {
+            System.out.println(
+                    "No se ha podido completar la operación: "
+                            + e.getMessage()
+            );
+        }
+    }
+
+
+    // Preparar una modificación sin tocar todavía la reserva original
+    private static void modificarDesdeConsola(
+            Scanner scanner,
+            ReservaService reservaService,
+            Reserva reserva,
+            String movil) throws ReservaException {
+
+        System.out.println();
+        System.out.println("=== Modificar reserva " + reserva.getId() + " ===");
+        System.out.println(
+                "Actual: " + reserva.getFecha()
+                        + " a las " + reserva.getHora()
+                        + ", " + reserva.getPersonas() + " personas"
+                        + " y " + reserva.getTronas() + " tronas."
+        );
+
+        int personas = leerEntero(
+                scanner, "Número de personas que quieres reservar (1–12): ",
+                1, 12
+        );
+
+        LocalDate fecha = leerFecha(scanner);
+
+        // Excluir esta reserva para no contarla dos veces
+        List<LocalTime> horasDisponibles =
+                reservaService.consultarHorasDisponibles(
+                        fecha, personas, reserva.getId()
+                );
+
+        if (horasDisponibles.isEmpty()) {
+            System.out.println(
+                    "No hay horarios disponibles. "
+                            + "Tu reserva original se mantiene."
+            );
+            return;
+        }
+
+        System.out.println("Horarios disponibles:");
+
+        for (int i = 0; i < horasDisponibles.size(); i++) {
+            System.out.println(
+                    (i + 1) + ". " + horasDisponibles.get(i)
+            );
+        }
+
+        System.out.println("0. Abandonar la modificación");
+
+        int seleccion = leerEntero(
+                scanner,
+                "Elige el número del horario: ",
+                0,
+                horasDisponibles.size()
+        );
+
+        if (seleccion == 0) {
+            System.out.println("Tu reserva original se mantiene.");
+            return;
+        }
+
+        LocalTime hora = horasDisponibles.get(seleccion - 1);
+        int tronas;
+
+        while (true) {
+            tronas = leerEntero(
+                    scanner,
+                    "Número de tronas (0 si no necesitas): ",
+                    0,
+                    personas
+            );
+
+            int disponibles =
+                    reservaService.calcularTronasDisponibles(
+                            fecha, hora, reserva.getId()
+                    );
+
+            if (tronas <= disponibles) {
+                break;
+            }
+
+            System.out.println(
+                    "Solo quedan " + disponibles
+                            + " tronas disponibles para ese horario."
+            );
+
+            if (confirmar(
+                    scanner,
+                    "¿Quieres continuar con " + disponibles + " tronas?")) {
+
+                tronas = disponibles;
+                break;
+            }
+
+            if (!confirmar(
+                    scanner, "¿Quieres introducir otra cantidad de tronas?")) {
+
+                System.out.println("Tu reserva original se mantiene.");
+                return;
+            }
+        }
+
+        System.out.println();
+        System.out.println("=== Propuesta de modificación ===");
+        System.out.println("Fecha: " + fecha);
+        System.out.println("Hora: " + hora);
+        System.out.println("Personas: " + personas);
+        System.out.println("Tronas: " + tronas);
+
+        if (!confirmar(scanner, "¿Confirmas estos cambios?")) {
+            System.out.println("Tu reserva original se mantiene.");
+            return;
+        }
+
+        // El servicio valida todo antes de cambiar los datos originales
+        reservaService.modificarReserva(
+                reserva.getId(), movil, personas, tronas, fecha, hora
+        );
+
+        System.out.println("Reserva modificada correctamente.");
+    }
+
+
+    // Pedir la confirmación antes de cancelar
+    private static void cancelarDesdeConsola(
+            Scanner scanner,
+            ReservaService reservaService,
+            Reserva reserva,
+            String movil) throws ReservaException {
+
+        boolean aceptar = confirmar(
+                scanner,
+                "¿Seguro que quieres cancelar la reserva "
+                        + reserva.getId()
+                        + " del " + reserva.getFecha()
+                        + " a las " + reserva.getHora() + "?"
+        );
+
+        if (!aceptar) {
+            System.out.println("Tu reserva se mantiene.");
+            return;
+        }
+
+        reservaService.cancelarReserva(reserva.getId(), movil);
+
+        System.out.println("Reserva cancelada correctamente.");
     }
 }
