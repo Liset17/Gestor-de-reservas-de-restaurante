@@ -252,9 +252,19 @@ public class ReservaService {
     }
 
 
-    // Devuelve los horarios donde cabe el grupo durante sus dos horas.
+    // Permite consultar un cambio sin contar también la reserva original
+    // Consulta para crear una reserva
     public List<LocalTime> consultarHorasDisponibles(
             LocalDate fecha, int personas) throws ReservaException {
+
+        return consultarHorasDisponibles(fecha, personas, null);
+    }
+
+    // Consulta que permite excluir la reserva que se modifica
+    public List<LocalTime> consultarHorasDisponibles(
+            LocalDate fecha,
+            int personas,
+            Integer idReservaExcluir) throws ReservaException {
 
         if (fecha == null) {
             throw new ReservaException(
@@ -280,12 +290,12 @@ public class ReservaService {
 
             try {
                 validarFechaHora(fecha, hora);
-                validarAforo(fecha, hora, personas);
+                validarAforo(fecha, hora, personas, idReservaExcluir);
 
                 horasDisponibles.add(hora);
 
             } catch (ReservaException e) {
-                // No añadimos horas pasadas o sin aforo suficiente.
+                // Omitir horas pasadas o sin aforo suficiente.
             }
         }
 
@@ -300,7 +310,7 @@ public class ReservaService {
     }
 
     // Consulta que permite excluir la reserva que se modifica
-    private int calcularTronasDisponibles(
+    public int calcularTronasDisponibles(
             LocalDate fecha,
             LocalTime hora,
             Integer idReservaExcluir) {
@@ -447,6 +457,19 @@ public class ReservaService {
         return false;
     }
 
+
+    // Obtener las reservas asociadas al móvil del cliente
+    public List<Reserva> consultarReservas(String movil)
+            throws ReservaException {
+
+        if (movil == null || movil.isBlank()) {
+            throw new ReservaException(
+                    "Debes indicar un número móvil."
+            );
+        }
+
+        return reservaRepository.buscarPorMovil(movil);
+    }
 
     // 13-. Regla H: crear / modificar / cancelar
     public void cancelarReserva(int id, String movil)
