@@ -1185,4 +1185,89 @@ class ReservaServiceTest {
         assertEquals(cliente.getMovil(), segunda.getCliente().getMovil());
     }
 
+
+
+    // Este metodo comprueba que no se pueden solicitar cantidades negativas de tronas.
+    @Test
+    void noSePuedeCrearUnaReservaConTronasNegativas() {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        assertThrows(ReservaException.class,
+                () -> servicio.crearReserva(
+                        cliente, 4, -1, fecha, hora
+                ));
+
+        assertEquals(0, repositorio.obtenerTodas().size());
+    }
+
+
+    // Este metodo prueba que las tronas no pueden superar el número de personas.
+    @Test
+    void noSePuedeCrearUnaReservaConMasTronasQuePersonas() {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        assertThrows(ReservaException.class,
+                () -> servicio.crearReserva(
+                        cliente, 4, 5, fecha, hora
+                ));
+
+        assertEquals(0, repositorio.obtenerTodas().size());
+    }
+
+    // Este metodo prueba que el servicio rechaza más tronas de las disponibles.
+    @Test
+    void noSePuedeCrearUnaReservaConMasTronasQueLasDisponibles()
+            throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        // Dos grupos utilizan 18 de las 20 tronas.
+        for (int i = 1; i <= 2; i++) {
+            Cliente cliente = new Cliente(
+                    "Cliente", "Prueba",
+                    "60000000" + i,
+                    "cliente" + i + "@example.com"
+            );
+
+            servicio.crearReserva(cliente, 9, 9, fecha, hora);
+        }
+
+        Cliente maria = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        // María solicita 3, pero solo quedan 2.
+        assertThrows(ReservaException.class,
+                () -> servicio.crearReserva(
+                        maria, 4, 3, fecha, hora
+                ));
+
+        assertEquals(2, repositorio.obtenerTodas().size());
+        assertEquals(2, servicio.calcularTronasDisponibles(fecha, hora));
+    }
 }
