@@ -1050,4 +1050,75 @@ class ReservaServiceTest {
 
         assertEquals(0, repositorio.obtenerTodas().size());
     }
+
+
+    // Este metodo comprueba que una reserva para ayer se rechaza y no se guarda.
+    @Test
+    void noSePuedeCrearUnaReservaEnUnaFechaPasada() {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().minusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        assertThrows(ReservaException.class,
+                () -> servicio.crearReserva(
+                        cliente, 4, 0, fecha, hora
+                ));
+
+        assertEquals(0, repositorio.obtenerTodas().size());
+    }
+
+
+    // Este metodo comprueba que no se admiten reservas antes de las 11:30.
+    @Test
+    void noSePuedeCrearUnaReservaAntesDelHorarioPermitido() {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(11, 0);
+
+        assertThrows(ReservaException.class,
+                () -> servicio.crearReserva(
+                        cliente, 4, 0, fecha, hora
+                ));
+
+        assertEquals(0, repositorio.obtenerTodas().size());
+    }
+
+    // Este metodo comprueba que no se admiten horas fuera de los intervalos de 30 minutos.
+    @Test
+    void noSePuedeCrearUnaReservaConMinutosNoPermitidos() {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 15);
+
+        assertThrows(ReservaException.class,
+                () -> servicio.crearReserva(
+                        cliente, 4, 0, fecha, hora
+                ));
+
+        assertEquals(0, repositorio.obtenerTodas().size());
+    }
 }
