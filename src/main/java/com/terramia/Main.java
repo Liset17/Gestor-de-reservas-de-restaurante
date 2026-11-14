@@ -49,7 +49,7 @@ public class Main {
                     break;
 
                 case "3":
-                    System.out.println("Has elegido Contacto.");
+                    contacto(scanner, contactoService);
                     break;
 
                 case "0":
@@ -584,5 +584,45 @@ public class Main {
         reservaService.cancelarReserva(reserva.getId(), movil);
 
         System.out.println("Reserva cancelada correctamente.");
+    }
+
+
+
+    // Recoger y confirmar un mensaje antes de guardarlo
+    private static void contacto(
+            Scanner scanner, ContactoService contactoService) {
+
+        System.out.println();
+        System.out.println("=== Contacto ===");
+
+        String nombre = leerTextoObligatorio(scanner, "Nombre: ");
+        String correo = leerTextoObligatorio(
+                scanner, "Correo electrónico: "
+        );
+        String mensaje = leerTextoObligatorio(scanner, "Mensaje: ");
+
+        System.out.println();
+        System.out.println("=== Confirma tu mensaje ===");
+        System.out.println("Nombre: " + nombre);
+        System.out.println("Correo: " + correo);
+        System.out.println("Mensaje: " + mensaje);
+
+        if (!confirmar(scanner, "¿Quieres guardar este mensaje?")) {
+            System.out.println("No se ha guardado ningún mensaje.");
+            return;
+        }
+
+        try {
+            contactoService.guardarMensaje(nombre, correo, mensaje);
+
+            System.out.println(
+                    "Tu mensaje se ha guardado correctamente."
+            );
+
+        } catch (ReservaException e) {
+            System.out.println(
+                    "No se ha guardado el mensaje: " + e.getMessage()
+            );
+        }
     }
 }
