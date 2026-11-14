@@ -3,8 +3,10 @@ package com.terramia.service;
 import com.terramia.repository.ReservaRepository;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.LocalTime;
+
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1380,5 +1382,85 @@ class ReservaServiceTest {
         assertEquals(1, repositorio.obtenerTodas().size());
     }
 
+
+    // Comprueba que una reserva terminada pasa a FINALIZADA.
+    @Test
+    void unaReservaTerminadaPasaAFinalizada() {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        // Ayer a las 19:00: sus dos horas ya han terminado.
+        Reserva reserva = new Reserva(
+                cliente, 4,
+                LocalDate.now().minusDays(1),
+                LocalTime.of(19, 0)
+        );
+        repositorio.guardar(reserva);
+
+        servicio.actualizarReservasFinalizadas();
+
+        assertEquals(EstadoReserva.FINALIZADA, reserva.getEstado());
+        assertEquals(1, repositorio.obtenerTodas().size());
+    }
+
+    // Comprueba que una reserva en curso sigue ACTIVA.
+    @Test
+    void unaReservaEnCursoNoPasaAFinalizada() {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        // Comenzó hace una hora: todavía no han transcurrido las dos horas.
+        LocalDateTime inicio = LocalDateTime.now().minusHours(1);
+
+        Reserva reserva = new Reserva(
+                cliente, 4,
+                inicio.toLocalDate(),
+                inicio.toLocalTime()
+        );
+        repositorio.guardar(reserva);
+
+        servicio.actualizarReservasFinalizadas();
+
+        assertEquals(EstadoReserva.ACTIVA, reserva.getEstado());
+        assertEquals(1, repositorio.obtenerTodas().size());
+    }
+
+    // Comprueba que actualizar estados no transforma una cancelada en finalizada.
+    @Test
+    void unaReservaCanceladaSeMantieneCanceladaAlActualizarEstados() {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        Reserva reserva = new Reserva(
+                cliente, 4,
+                LocalDate.now().minusDays(1),
+                LocalTime.of(19, 0)
+        );
+        reserva.setEstado(EstadoReserva.CANCELADA);
+        repositorio.guardar(reserva);
+
+        servicio.actualizarReservasFinalizadas();
+
+        assertEquals(EstadoReserva.CANCELADA, reserva.getEstado());
+        assertEquals(1, repositorio.obtenerTodas().size());
+    }
 
 }
