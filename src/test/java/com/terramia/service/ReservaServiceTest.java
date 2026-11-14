@@ -1188,7 +1188,6 @@ class ReservaServiceTest {
     }
 
 
-
     // Este metodo comprueba que no se pueden solicitar cantidades negativas de tronas.
     @Test
     void noSePuedeCrearUnaReservaConTronasNegativas() {
@@ -1463,4 +1462,133 @@ class ReservaServiceTest {
         assertEquals(1, repositorio.obtenerTodas().size());
     }
 
+
+    // Comprueba que no se ofrece una hora sin aforo,
+// pero sí la hora en que las plazas vuelven a quedar libres.
+    @Test
+    void consultarHorariosDescartaHorasSinAforo()
+            throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+
+        // Diez grupos de 12 completan el aforo de 19:00 a 21:00.
+        for (int i = 1; i <= 10; i++) {
+            Cliente cliente = new Cliente(
+                    "Cliente", "Prueba",
+                    "6000000" + i,
+                    "cliente" + i + "@example.com"
+            );
+
+            servicio.crearReserva(
+                    cliente, 12, 0, fecha, LocalTime.of(19, 0)
+            );
+        }
+
+        var horas = servicio.consultarHorasDisponibles(fecha, 1);
+
+        assertFalse(horas.contains(LocalTime.of(19, 0)));
+        assertFalse(horas.contains(LocalTime.of(20, 0)));
+        assertTrue(horas.contains(LocalTime.of(21, 0)));
+    }
+
+    // Comprueba que consultar una modificación permite reutilizar
+// las plazas de la propia reserva sin contarlas dos veces.
+    @Test
+    void consultarHorariosParaModificarExcluyeLaReservaOriginal()
+            throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        // Otros clientes ocupan 108 plazas.
+        for (int i = 1; i <= 9; i++) {
+            Cliente cliente = new Cliente(
+                    "Cliente", "Prueba",
+                    "60000000" + i,
+                    "cliente" + i + "@example.com"
+            );
+
+            servicio.crearReserva(cliente, 12, 0, fecha, hora);
+        }
+
+        Cliente maria = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        Reserva reservaMaria = servicio.crearReserva(
+                maria, 12, 0, fecha, hora
+        );
+
+        // Una reserva nueva no cabe: las 120 plazas están ocupadas.
+        var horasParaCrear =
+                servicio.consultarHorasDisponibles(fecha, 12);
+
+        // Para modificar la de María, sus 12 plazas se excluyen del cálculo.
+        var horasParaModificar = servicio.consultarHorasDisponibles(
+                fecha, 12, reservaMaria.getId()
+        );
+
+        assertFalse(horasParaCrear.contains(hora));
+        assertTrue(horasParaModificar.contains(hora));
+
+        // Consultar no debe modificar ni eliminar reservas.
+        assertEquals(10, repositorio.obtenerTodas().size());
+        assertEquals(12, reservaMaria.getPersonas());
+        assertEquals(hora, reservaMaria.getHora());
+    }
+
+    // Comprueba que consultar por móvil devuelve las reservas
+// de ese cliente y deja fuera las de otro.
+    @Test
+    void consultarReservasDevuelveSoloLasDelMovilIndicado()
+            throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+
+        Cliente maria = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        Cliente luis = new Cliente(
+                "Luis", "Pérez",
+                "600000088", "luis@example.com"
+        );
+
+        Reserva primeraMaria = servicio.crearReserva(
+                maria, 4, 0, fecha, LocalTime.of(19, 0)
+        );
+
+        Reserva segundaMaria = servicio.crearReserva(
+                maria, 2, 0, fecha, LocalTime.of(21, 0)
+        );
+
+        servicio.crearReserva(
+                luis, 3, 0, fecha, LocalTime.of(19, 0)
+        );
+
+        var reservasMaria =
+                servicio.consultarReservas(maria.getMovil());
+
+        assertEquals(2, reservasMaria.size());
+        assertTrue(reservasMaria.contains(primeraMaria));
+        assertTrue(reservasMaria.contains(segundaMaria));
+
+        for (Reserva reserva : reservasMaria) {
+            assertEquals(
+                    maria.getMovil(),
+                    reserva.getCliente().getMovil()
+            );
+        }
+    }
 }
