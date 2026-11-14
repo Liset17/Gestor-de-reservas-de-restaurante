@@ -1003,4 +1003,51 @@ class ReservaServiceTest {
         assertFalse(segundoIntento);
     }
 
+
+    // Comprueba que una reserva necesita al menos una persona.
+    @Test
+    void noSePuedeCrearUnaReservaParaCeroPersonas() {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        assertThrows(ReservaException.class,
+                () -> servicio.crearReserva(
+                        cliente, 0, 0, fecha, hora
+                ));
+
+        assertEquals(0, repositorio.obtenerTodas().size());
+    }
+
+
+    // Comprueba que una reserva no puede superar las 12 personas.
+    @Test
+    void noSePuedeCrearUnaReservaParaTrecePersonas() {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        assertThrows(ReservaException.class,
+                () -> servicio.crearReserva(
+                        cliente, 13, 0, fecha, hora
+                ));
+
+        assertEquals(0, repositorio.obtenerTodas().size());
+    }
 }
