@@ -76,6 +76,33 @@ y no necesita estar asociado a un cliente registrado.
 - TIME: hora.
 - DATETIME: fecha y hora juntas.
 
+
+## Relación entre clientes y reservas
+
+La relación entre clientes y reservas es de uno a muchos:
+
+- Un cliente puede tener cero, una o varias reservas.
+- Cada reserva pertenece a un único cliente.
+
+La columna reservas.cliente_id hace referencia a clientes.id.
+
+Por ejemplo, si María tiene el ID de cliente 7,
+todas sus reservas tendrán cliente_id = 7.
+Cada una conservará su propio ID de reserva.
+
+Esto permite guardar los datos del cliente una sola vez
+y asociarle sus diferentes reservas.
+
+El ID interno no sustituye el acceso mediante móvil
+y código de verificación: identifica al cliente
+dentro de la base de datos.
+
+### Mensajes de contacto
+
+Los mensajes de contacto son independientes de las reservas.
+No requieren una relación con clientes, porque una persona
+puede escribir al restaurante sin haber reservado.
+
 ## Próximos pasos
 
 - Definir la relación entre clientes y reservas.
