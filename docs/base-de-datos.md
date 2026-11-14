@@ -103,6 +103,81 @@ Los mensajes de contacto son independientes de las reservas.
 No requieren una relación con clientes, porque una persona
 puede escribir al restaurante sin haber reservado.
 
+
+## Restricciones de la base de datos
+
+### Identificadores
+
+Las tres tablas tendrán una columna id con estas propiedades:
+
+- PRIMARY KEY: identifica de forma única cada fila.
+- AUTO_INCREMENT: MySQL genera el identificador al insertar una fila.
+
+Cada tabla tiene sus propios identificadores.
+El ID de un cliente y el de una reserva pueden coincidir
+numéricamente sin representar lo mismo.
+
+### Datos obligatorios
+
+Las columnas definidas en las tres tablas serán NOT NULL:
+no admitirán la ausencia de un valor.
+
+NOT NULL no impide guardar texto vacío o formado por espacios.
+El servicio seguirá rechazando esos casos.
+
+### Móvil único
+
+La columna clientes.movil tendrá una restricción UNIQUE.
+
+No podrá haber dos filas de clientes con el mismo móvil.
+Cuando un cliente vuelva a reservar, se deberá buscar
+y reutilizar el cliente existente.
+
+El correo no tendrá una restricción de unicidad:
+puede ser compartido por varias personas.
+
+### Relación válida entre cliente y reserva
+
+reservas.cliente_id será una clave foránea
+que hará referencia a clientes.id.
+
+Esto impide guardar una reserva asociada
+a un cliente que no existe.
+
+No se permitirá eliminar un cliente mientras tenga reservas.
+No se eliminarán sus reservas automáticamente.
+
+### Valores permitidos
+
+Se definirán restricciones CHECK para comprobar que:
+
+- personas esté entre 1 y 12.
+- tronas esté entre 0 y personas.
+- estado sea ACTIVA, CANCELADA o FINALIZADA.
+- hora esté entre las 11:30 y las 23:30,
+  en intervalos de 30 minutos y sin segundos.
+
+La columna tronas tendrá 0 como valor por defecto.
+La columna estado tendrá ACTIVA como valor por defecto.
+
+Un valor por defecto se aplica cuando se omite esa columna
+al insertar la fila.
+
+### Reglas que seguirá comprobando el servicio
+
+Las restricciones de una fila no bastan para comprobar:
+
+- El máximo de 120 personas durante las dos horas.
+- El máximo de 20 tronas durante las dos horas.
+- Los solapamientos entre reservas del mismo cliente.
+- Que la fecha y hora sean futuras.
+- Los permisos para modificar o cancelar.
+- Las confirmaciones y la verificación de acceso.
+
+Estas reglas seguirán en el servicio.
+Las operaciones simultáneas se protegerán mediante
+transacciones y control de concurrencia en su bloque correspondiente.
+
 ## Próximos pasos
 
 - Definir la relación entre clientes y reservas.
