@@ -1270,4 +1270,115 @@ class ReservaServiceTest {
         assertEquals(2, repositorio.obtenerTodas().size());
         assertEquals(2, servicio.calcularTronasDisponibles(fecha, hora));
     }
+
+    //  Este metodo prueba que otro cliente no puede modificar la reserva.
+    @Test
+    void noSePuedeModificarUnaReservaDeOtroCliente()
+            throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente maria = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        Reserva reserva = servicio.crearReserva(
+                maria, 4, 1, fecha, hora
+        );
+
+        // Se utiliza un móvil distinto al de María.
+        assertThrows(ReservaException.class,
+                () -> servicio.modificarReserva(
+                        reserva.getId(), "600000088",
+                        6, 2, fecha.plusDays(1), LocalTime.of(20, 0)
+                ));
+
+        assertEquals(4, reserva.getPersonas());
+        assertEquals(1, reserva.getTronas());
+        assertEquals(fecha, reserva.getFecha());
+        assertEquals(hora, reserva.getHora());
+        assertEquals(EstadoReserva.ACTIVA, reserva.getEstado());
+        assertEquals(1, repositorio.obtenerTodas().size());
+    }
+
+    //  Este metodo prueba que una reserva cancelada no se puede modificar.
+    @Test
+    void noSePuedeModificarUnaReservaCancelada()
+            throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente maria = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        LocalTime hora = LocalTime.of(19, 0);
+
+        Reserva reserva = servicio.crearReserva(
+                maria, 4, 1, fecha, hora
+        );
+
+        servicio.cancelarReserva(reserva.getId(), maria.getMovil());
+
+        assertThrows(ReservaException.class,
+                () -> servicio.modificarReserva(
+                        reserva.getId(), maria.getMovil(),
+                        6, 2, fecha.plusDays(1), LocalTime.of(20, 0)
+                ));
+
+        assertEquals(4, reserva.getPersonas());
+        assertEquals(1, reserva.getTronas());
+        assertEquals(fecha, reserva.getFecha());
+        assertEquals(hora, reserva.getHora());
+        assertEquals(EstadoReserva.CANCELADA, reserva.getEstado());
+        assertEquals(1, repositorio.obtenerTodas().size());
+    }
+
+    //  Este metodo prueba que una reserva cuyo inicio ya pasó no se puede modificar.
+    @Test
+    void noSePuedeModificarUnaReservaQueYaEmpezo() {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente maria = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        LocalDate fechaOriginal = LocalDate.now().minusDays(1);
+        LocalTime horaOriginal = LocalTime.of(19, 0);
+
+        // Preparamos directamente una reserva antigua para simular el caso.
+        Reserva reserva = new Reserva(
+                maria, 4, fechaOriginal, horaOriginal
+        );
+        reserva.setTronas(1);
+        repositorio.guardar(reserva);
+
+        LocalDate nuevaFecha = LocalDate.now().plusDays(1);
+
+        assertThrows(ReservaException.class,
+                () -> servicio.modificarReserva(
+                        reserva.getId(), maria.getMovil(),
+                        6, 2, nuevaFecha, LocalTime.of(20, 0)
+                ));
+
+        assertEquals(4, reserva.getPersonas());
+        assertEquals(1, reserva.getTronas());
+        assertEquals(fechaOriginal, reserva.getFecha());
+        assertEquals(horaOriginal, reserva.getHora());
+        assertEquals(EstadoReserva.ACTIVA, reserva.getEstado());
+        assertEquals(1, repositorio.obtenerTodas().size());
+    }
+
+
 }
