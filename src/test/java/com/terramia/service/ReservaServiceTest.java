@@ -1121,4 +1121,68 @@ class ReservaServiceTest {
 
         assertEquals(0, repositorio.obtenerTodas().size());
     }
+
+
+    //Este metodo comprueba que un cliente no puede tener dos reservas solapadas.
+    @Test
+    void noSePuedeCrearOtraReservaSolapadaDelMismoCliente()
+            throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+
+        // La primera reserva ocupa desde las 19:00 hasta las 21:00.
+        Reserva original = servicio.crearReserva(
+                cliente, 4, 0, fecha, LocalTime.of(19, 0)
+        );
+
+        // La segunda empezaría mientras la primera sigue en curso.
+        assertThrows(ReservaException.class,
+                () -> servicio.crearReserva(
+                        cliente, 2, 0, fecha, LocalTime.of(20, 0)
+                ));
+
+        // Solo debe permanecer la reserva original.
+        assertEquals(1, repositorio.obtenerTodas().size());
+        assertEquals(
+                original.getId(),
+                repositorio.obtenerTodas().get(0).getId()
+        );
+    }
+
+    // Este metodo comprueba que terminar y empezar a la misma hora no es solaparse.
+    @Test
+    void sePuedeCrearOtraReservaJustoCuandoTerminaLaAnterior()
+            throws ReservaException {
+
+        ReservaRepository repositorio = new ReservaRepository();
+        ReservaService servicio = new ReservaService(repositorio);
+
+        Cliente cliente = new Cliente(
+                "María", "García",
+                "600000099", "maria@example.com"
+        );
+
+        LocalDate fecha = LocalDate.now().plusDays(1);
+
+        servicio.crearReserva(
+                cliente, 4, 0, fecha, LocalTime.of(19, 0)
+        );
+
+        Reserva segunda = servicio.crearReserva(
+                cliente, 2, 0, fecha, LocalTime.of(21, 0)
+        );
+
+        assertEquals(2, repositorio.obtenerTodas().size());
+        assertEquals(LocalTime.of(21, 0), segunda.getHora());
+        assertEquals(cliente.getMovil(), segunda.getCliente().getMovil());
+    }
+
 }
