@@ -98,6 +98,23 @@ También se pueden ejecutar desde IntelliJ IDEA:
 - Total: 49 pruebas aprobadas, sin fallos ni errores.
 - Resultado de Maven: `BUILD SUCCESS`.
 
+## Capturas
+
+Crear una reserva:
+
+![Datos de la reserva](docs/img/01-reserva-datos.png)
+
+![Confirmación de la reserva](docs/img/02-reserva-confirmacion.png)
+
+Consultar «Mis reservas» con código de verificación simulado:
+
+![Mis reservas](docs/img/03-mis-reservas.png)
+
+Resultado de las pruebas:
+
+![Tests aprobados](docs/img/04-tests.png)
+
+
 ## Estado actual
 
 La versión de consola está implementada y se ha comprobado
