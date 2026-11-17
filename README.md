@@ -102,7 +102,7 @@ También se pueden ejecutar desde IntelliJ IDEA:
 
 Crear una reserva:
 
-![Datos de la reserva](docs/img/borrar)
+![01-reserva-dato.png](docs/img/01-reserva-dato.png) 
 
 ![Confirmación de la reserva](docs/img/02-reserva-confirmacion.png)
 
