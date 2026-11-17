@@ -106,6 +106,9 @@ cancelación y contacto.
 
 La conexión del frontend con el backend queda para la siguiente fase.
 
+Sobre la carpeta FrontEnd-Terramia: es un prototipo visual hecho con IA (React) para probar cómo podría ser la estructura de la web. No es el frontend definitivo, que se desarrollará cuando termine el backend.
+
+
 ## Limitaciones actuales
 
 - Los datos se guardan en memoria y se pierden al cerrar el programa.
